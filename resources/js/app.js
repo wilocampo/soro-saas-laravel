@@ -23,7 +23,10 @@ import '@/assets/styles.scss';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
-    // Let our usePageTitle composable handle document titles
+    title: (title) => {
+        // Don't let Inertia manage the title - our composable handles it
+        return title;
+    },
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,

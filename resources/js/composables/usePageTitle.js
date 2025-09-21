@@ -56,8 +56,42 @@ export function usePageTitle() {
     
     // Watch for title changes and update document title
     watch(pageTitle, (newTitle) => {
-        console.log('Setting document title to:', newTitle);
+        console.log('usePageTitle: Setting title to:', newTitle);
+        
+        // Set the title immediately
         document.title = newTitle;
+        
+        // Use MutationObserver to watch for title changes and override them
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.target === document.head) {
+                    const titleElement = document.querySelector('title');
+                    if (titleElement && titleElement.textContent !== newTitle) {
+                        console.log('usePageTitle: Title was changed to:', titleElement.textContent, 'overriding with:', newTitle);
+                        titleElement.textContent = newTitle;
+                    }
+                }
+            });
+        });
+        
+        // Start observing
+        observer.observe(document.head, { childList: true, subtree: true });
+        
+        // Also set it multiple times with delays
+        const setTitle = () => {
+            document.title = newTitle;
+        };
+        
+        setTimeout(setTitle, 10);
+        setTimeout(setTitle, 50);
+        setTimeout(setTitle, 100);
+        setTimeout(setTitle, 200);
+        setTimeout(setTitle, 500);
+        
+        // Clean up observer after 2 seconds
+        setTimeout(() => {
+            observer.disconnect();
+        }, 2000);
     }, { immediate: true });
     
     return {
