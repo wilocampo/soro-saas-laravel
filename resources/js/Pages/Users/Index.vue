@@ -4,9 +4,10 @@
             <AppBreadcrumb :items="breadcrumbItems" />
         </template>
         
-        <div class="grid">
-            <div class="col-12">
-                <CRUDDataTable
+        <div class="p-4">
+            <div class="grid">
+                <div class="col-12">
+                    <CRUDDataTable
                     :data="filteredUsers"
                     title="Manage Users"
                     :loading="loading"
@@ -251,6 +252,8 @@
                 />
             </template>
         </Dialog>
+            </div>
+        </div>
     </AuthenticatedLayout>
 </template>
 
@@ -311,6 +314,9 @@ const breadcrumbItems = computed(() => [
 
 // Computed
 const filteredUsers = computed(() => {
+    console.log('props.users:', props.users);
+    console.log('props.users.data:', props.users.data);
+    
     if (!globalFilter.value) return props.users.data;
     
     return props.users.data.filter(user => 
