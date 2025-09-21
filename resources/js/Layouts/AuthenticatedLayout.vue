@@ -1,12 +1,17 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { ref, watch, computed } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import AppFooter from '@/layout/AppFooter.vue';
 import AppSidebar from '@/layout/AppSidebar.vue';
 import AppTopbar from '@/layout/AppTopbar.vue';
+import AppBreadcrumb from '@/components/AppBreadcrumb.vue';
 import Toast from 'primevue/toast';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
+const page = usePage();
+const { pageTitle } = usePageTitle();
 
 const outsideClickListener = ref(null);
 
@@ -26,6 +31,48 @@ const containerClass = computed(() => {
         'layout-overlay-active': layoutState.overlayMenuActive,
         'layout-mobile-active': layoutState.staticMenuMobileActive
     };
+});
+
+const breadcrumbItems = computed(() => {
+    const currentPath = page.url;
+    const pathSegments = currentPath.split('/').filter(segment => segment);
+    
+    const breadcrumbs = [];
+    let currentPathAccumulator = '';
+    
+    pathSegments.forEach((segment, index) => {
+        currentPathAccumulator += `/${segment}`;
+        
+        // Convert segment to readable label
+        let label = segment.charAt(0).toUpperCase() + segment.slice(1);
+        
+        // Handle special cases
+        if (segment === 'dashboard') {
+            label = 'Dashboard';
+        } else if (segment === 'users') {
+            label = 'Users';
+        } else if (segment === 'tenants') {
+            label = 'Tenants';
+        } else if (segment === 'settings') {
+            label = 'Settings';
+        } else if (segment === 'notifications') {
+            label = 'Notifications';
+        } else if (segment === 'create') {
+            label = 'Create';
+        } else if (segment === 'edit') {
+            label = 'Edit';
+        } else if (segment.match(/^\d+$/)) {
+            // If it's a number (ID), show it as "Details"
+            label = 'Details';
+        }
+        
+        breadcrumbs.push({
+            label: label,
+            href: index < pathSegments.length - 1 ? currentPathAccumulator : null
+        });
+    });
+    
+    return breadcrumbs;
 });
 
 
@@ -63,6 +110,18 @@ function isOutsideClicked(event) {
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
             <div class="layout-main">
+                <div class="layout-breadcrumb mb-6">
+                    <div class="flex justify-between items-center">
+                        <div class="page-title">
+                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
+                        </div>
+                        <div class="breadcrumb-nav">
+                            <slot name="breadcrumb">
+                                <AppBreadcrumb :items="breadcrumbItems" />
+                            </slot>
+                        </div>
+                    </div>
+                </div>
                 <slot />
             </div>
             <app-footer></app-footer>
@@ -71,3 +130,40 @@ function isOutsideClicked(event) {
     </div>
     <Toast />
 </template>
+
+<style scoped>
+.layout-breadcrumb {
+    padding: 1rem 2rem 0.5rem 2rem;
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.page-title h1 {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.breadcrumb-nav {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .layout-breadcrumb {
+        padding: 0.75rem 1rem 0.5rem 1rem;
+    }
+    
+    .layout-breadcrumb .flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .page-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .breadcrumb-nav {
+        width: 100%;
+    }
+}
+</style>
