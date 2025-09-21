@@ -56,8 +56,6 @@ export function usePageTitle() {
     
     // Watch for title changes and update document title
     watch(pageTitle, (newTitle) => {
-        console.log('usePageTitle: Setting title to:', newTitle);
-        
         // Set the title immediately
         document.title = newTitle;
         
@@ -67,7 +65,6 @@ export function usePageTitle() {
                 if (mutation.type === 'childList' && mutation.target === document.head) {
                     const titleElement = document.querySelector('title');
                     if (titleElement && titleElement.textContent !== newTitle) {
-                        console.log('usePageTitle: Title was changed to:', titleElement.textContent, 'overriding with:', newTitle);
                         titleElement.textContent = newTitle;
                     }
                 }
