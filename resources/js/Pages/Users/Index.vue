@@ -17,7 +17,7 @@
                     @delete-selected="deleteSelectedUsers"
                 >
                     <template #columns>
-                        <Column field="name" header="Name" sortable style="min-width: 16rem">
+                        <Column field="name" header="Name" sortable style="min-width: 12rem">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Avatar
@@ -26,11 +26,14 @@
                                         shape="circle"
                                         size="normal"
                                     />
-                                    <div class="flex flex-column">
-                                        <span class="font-semibold text-900">{{ data.name }}</span>
-                                        <span class="text-600 text-sm">{{ data.email }}</span>
-                                    </div>
+                                    <span class="font-semibold text-900">{{ data.name }}</span>
                                 </div>
+                            </template>
+                        </Column>
+                        
+                        <Column field="email" header="Email" sortable style="min-width: 16rem">
+                            <template #body="{ data }">
+                                <span class="text-600 text-sm">{{ data.email }}</span>
                             </template>
                         </Column>
                         
