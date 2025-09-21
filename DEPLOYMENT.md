@@ -1,6 +1,6 @@
 # 🚀 Deployment Guide
 
-This guide covers deploying the Laravel + Vue.js + PrimeVue SaaS application to production.
+This guide covers deploying the Laravel 12 + Vue.js + PrimeVue SaaS application to production.
 
 ## 📋 Prerequisites
 

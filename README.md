@@ -1,6 +1,6 @@
 # 🚀 Laravel + Vue.js + PrimeVue SaaS Application
 
-A complete multi-tenant SaaS application built with Laravel 11, Vue 3, and PrimeVue, featuring user management, role-based access control, and subdomain-based multitenancy.
+A complete multi-tenant SaaS application built with Laravel 12, Vue 3, and PrimeVue, featuring user management, role-based access control, and subdomain-based multitenancy.
 
 ## ✨ Features
 
@@ -36,8 +36,8 @@ A complete multi-tenant SaaS application built with Laravel 11, Vue 3, and Prime
 
 ## 🏗️ Architecture
 
-### Backend (Laravel 11)
-- **Laravel 11** - Latest Laravel framework
+### Backend (Laravel 12)
+- **Laravel 12** - Latest Laravel framework
 - **Inertia.js** - SPA experience without API complexity
 - **Spatie Multitenancy** - Multi-tenant architecture
 - **Spatie Laravel Permission** - Role and permission management
