@@ -1,61 +1,229 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🚀 Laravel + Vue.js + PrimeVue SaaS Application
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A complete multi-tenant SaaS application built with Laravel 11, Vue 3, and PrimeVue, featuring user management, role-based access control, and subdomain-based multitenancy.
 
-## About Laravel
+## ✨ Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🔐 Authentication & User Management
+- **Dynamic User Dropdown** - Real user data with avatar support and default initials
+- **User Management** - Complete CRUD operations with Sakai-style UI
+- **Role-Based Access Control** - Using Spatie Laravel Permission
+- **Profile Management** - User profile editing and password updates
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🔔 Notification System
+- **Notification Dropdown** - Real-time notifications with mark as read functionality
+- **Notification Page** - Full notification management interface
+- **Hover Effects** - Optimized for both light and dark modes
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🏢 Multitenancy
+- **Subdomain-Based Tenants** - Each tenant gets their own subdomain
+- **Database Isolation** - Separate database per tenant using Spatie Multitenancy
+- **Tenant Management** - Create, manage, and configure tenants
+- **Context-Aware Routing** - Landlord vs tenant-specific routes
 
-## Learning Laravel
+### 🎨 Modern UI/UX
+- **PrimeVue Components** - Professional UI component library
+- **Tailwind CSS** - Utility-first CSS framework
+- **Dark/Light Mode** - Complete theme support
+- **Responsive Design** - Mobile-first approach
+- **Sakai Theme** - Based on PrimeVue's Sakai demo
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🧭 Navigation & Layout
+- **Breadcrumb Navigation** - Dynamic breadcrumbs with home icon
+- **Sidebar Menu** - Collapsible navigation with icons
+- **Top Bar** - User dropdown, notifications, and theme toggle
+- **Floating Configurator** - Theme customization (login page excluded)
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🏗️ Architecture
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Backend (Laravel 11)
+- **Laravel 11** - Latest Laravel framework
+- **Inertia.js** - SPA experience without API complexity
+- **Spatie Multitenancy** - Multi-tenant architecture
+- **Spatie Laravel Permission** - Role and permission management
+- **SQLite Database** - Development database with migrations
 
-## Laravel Sponsors
+### Frontend (Vue 3)
+- **Vue 3 Composition API** - Modern reactive framework
+- **PrimeVue 4.3.9** - Professional UI components
+- **Tailwind CSS** - Utility-first styling
+- **PrimeIcons** - Comprehensive icon library
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 📁 Project Structure
 
-### Premium Partners
+```
+├── app/
+│   ├── Http/Controllers/          # API Controllers
+│   │   ├── TenantController.php   # Tenant management
+│   │   ├── UserController.php     # User management
+│   │   └── SettingsController.php # System settings
+│   ├── Http/Middleware/           # Custom middleware
+│   │   ├── LandlordMiddleware.php # Landlord access control
+│   │   └── TenantMiddleware.php   # Tenant access control
+│   ├── Models/
+│   │   ├── Tenant.php             # Tenant model with IsTenant interface
+│   │   └── User.php               # User model with tenant relationship
+│   └── Multitenancy/              # Multitenancy implementation
+│       ├── SubdomainTenantFinder.php
+│       └── SwitchTenantDatabaseTask.php
+├── resources/js/
+│   ├── components/                # Reusable Vue components
+│   │   ├── AppBreadcrumb.vue      # Breadcrumb navigation
+│   │   ├── UserDropdown.vue       # User dropdown menu
+│   │   └── NotificationDropdown.vue # Notification system
+│   ├── Pages/                     # Vue pages
+│   │   ├── Users/                 # User management pages
+│   │   ├── Tenants/               # Tenant management pages
+│   │   └── Settings/              # System settings
+│   └── layout/                    # Layout components
+│       ├── AppLayout.vue          # Main layout
+│       ├── AppMenu.vue            # Sidebar menu
+│       └── AppTopbar.vue          # Top navigation
+└── routes/
+    └── web.php                    # Application routes
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🚀 Installation
 
-## Contributing
+### Prerequisites
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- npm or yarn
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Setup
 
-## Code of Conduct
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd <project-directory>
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
 
-## Security Vulnerabilities
+3. **Install Node.js dependencies**
+   ```bash
+   npm install
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+4. **Environment setup**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-## License
+5. **Database setup**
+   ```bash
+   php artisan migrate
+   php artisan db:seed
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+6. **Build assets**
+   ```bash
+   npm run build
+   ```
+
+7. **Start development server**
+   ```bash
+   php artisan serve
+   npm run dev
+   ```
+
+## 🔧 Configuration
+
+### Multitenancy Setup
+The application uses subdomain-based multitenancy. Configure your local environment:
+
+1. **Add to hosts file** (`/etc/hosts` on Linux/Mac, `C:\Windows\System32\drivers\etc\hosts` on Windows):
+   ```
+   127.0.0.1 soro.local
+   127.0.0.1 tenant1.soro.local
+   127.0.0.1 tenant2.soro.local
+   ```
+
+2. **Configure web server** to point subdomains to the application
+
+### Database Configuration
+- **Main Database**: `database/database.sqlite` (landlord data)
+- **Tenant Databases**: Created dynamically per tenant
+- **Migrations**: Run `php artisan migrate` for main database
+
+## 🎯 Usage
+
+### Accessing the Application
+- **Main Domain**: `http://soro.local` (Landlord access)
+- **Tenant Subdomains**: `http://tenant1.soro.local` (Tenant access)
+
+### User Roles
+- **Super Admin**: Full system access
+- **Admin**: Tenant management access
+- **Manager**: User management within tenant
+- **User**: Basic user access
+
+### Key Features Usage
+1. **User Management**: Navigate to `/users` for CRUD operations
+2. **Tenant Management**: Navigate to `/tenants` for tenant administration
+3. **Notifications**: Click the bell icon in the top bar
+4. **Settings**: Navigate to `/settings` for system configuration
+
+## 🛠️ Development
+
+### Available Commands
+```bash
+# Laravel commands
+php artisan serve              # Start Laravel server
+php artisan migrate           # Run migrations
+php artisan db:seed           # Seed database
+php artisan tinker            # Interactive shell
+
+# Frontend commands
+npm run dev                   # Start Vite dev server
+npm run build                 # Build for production
+npm run watch                 # Watch for changes
+```
+
+### Code Style
+- **PHP**: Follows PSR-12 standards
+- **Vue**: Composition API with TypeScript-like patterns
+- **CSS**: Tailwind CSS utility classes
+
+## 📦 Dependencies
+
+### Backend
+- Laravel 11
+- Spatie Multitenancy
+- Spatie Laravel Permission
+- Inertia.js
+
+### Frontend
+- Vue 3
+- PrimeVue 4.3.9
+- Tailwind CSS
+- PrimeIcons
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## 🙏 Acknowledgments
+
+- [Laravel](https://laravel.com/) - The PHP framework
+- [Vue.js](https://vuejs.org/) - The progressive JavaScript framework
+- [PrimeVue](https://primevue.org/) - The Vue UI component library
+- [Spatie](https://spatie.be/) - Laravel packages for multitenancy and permissions
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+
+---
+
+**Built with ❤️ using Laravel, Vue.js, and PrimeVue**
