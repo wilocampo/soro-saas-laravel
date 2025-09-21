@@ -47,13 +47,13 @@
             <template #header>
                 <div class="flex flex-wrap gap-2 items-center justify-between">
                     <h4 class="m-0">{{ title }}</h4>
-                    <span class="p-input-icon-left">
-                        <i class="pi pi-search" />
+                    <IconField>
+                        <InputIcon class="pi pi-search" />
                         <InputText
                             v-model="globalFilter"
                             placeholder="Search..."
                         />
-                    </span>
+                    </IconField>
                 </div>
             </template>
 
@@ -75,6 +75,8 @@ import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import Toolbar from 'primevue/toolbar';
 
 const props = defineProps({
