@@ -17,12 +17,13 @@
                     @delete-selected="deleteSelectedUsers"
                 >
                     <template #columns>
-                        <Column field="name" header="Name" sortable style="min-width: 12rem" bodyClass="flex align-items-center">
+                        <Column field="name" header="Name" sortable class="min-w-48" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Avatar
                                         :label="getInitials(data.name)"
-                                        :style="{ backgroundColor: getAvatarColor(data.name), color: 'white' }"
+                                        :style="{ backgroundColor: getAvatarColor(data.name) }"
+                                        class="text-white"
                                         shape="circle"
                                         size="normal"
                                     />
@@ -31,13 +32,13 @@
                             </template>
                         </Column>
                         
-                        <Column field="email" header="Email" sortable style="min-width: 16rem" bodyClass="flex align-items-center">
+                        <Column field="email" header="Email" sortable class="min-w-64" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <span class="text-600 text-sm">{{ data.email }}</span>
                             </template>
                         </Column>
                         
-                        <Column field="roles" header="Roles" sortable style="min-width: 10rem" bodyClass="flex align-items-center">
+                        <Column field="roles" header="Roles" sortable class="min-w-40" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <div class="flex flex-wrap gap-1">
                                     <Tag
@@ -52,13 +53,13 @@
                             </template>
                         </Column>
                         
-                        <Column field="created_at" header="Created" sortable style="min-width: 12rem" bodyClass="flex align-items-center">
+                        <Column field="created_at" header="Created" sortable class="min-w-48" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <span class="text-900">{{ formatDate(data.created_at) }}</span>
                             </template>
                         </Column>
                         
-                        <Column header="Actions" :exportable="false" style="min-width: 12rem" bodyClass="flex align-items-center">
+                        <Column header="Actions" :exportable="false" class="min-w-48" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Button
@@ -227,12 +228,12 @@
         <!-- Delete Confirmation Dialog -->
         <Dialog
             v-model:visible="deleteUserDialog"
-            :style="{ width: '450px' }"
+            class="w-112"
             header="Confirm"
             :modal="true"
         >
             <div class="flex align-items-center justify-content-center">
-                <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
+                <i class="pi pi-exclamation-triangle mr-3 text-2xl" />
                 <span v-if="selectedUser">Are you sure you want to delete <b>{{ selectedUser.name }}</b>?</span>
             </div>
             <template #footer>
