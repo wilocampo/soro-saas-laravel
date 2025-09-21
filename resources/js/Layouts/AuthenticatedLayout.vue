@@ -7,9 +7,11 @@ import AppSidebar from '@/layout/AppSidebar.vue';
 import AppTopbar from '@/layout/AppTopbar.vue';
 import AppBreadcrumb from '@/components/AppBreadcrumb.vue';
 import Toast from 'primevue/toast';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { layoutConfig, layoutState, isSidebarActive } = useLayout();
 const page = usePage();
+const { pageTitle } = usePageTitle();
 
 const outsideClickListener = ref(null);
 
@@ -73,6 +75,8 @@ const breadcrumbItems = computed(() => {
     return breadcrumbs;
 });
 
+// Page title is now handled by the usePageTitle composable
+
 function bindOutsideClickListener() {
     if (!outsideClickListener.value) {
         outsideClickListener.value = (event) => {
@@ -108,9 +112,16 @@ function isOutsideClicked(event) {
         <div class="layout-main-container">
             <div class="layout-main">
                 <div class="layout-breadcrumb mb-6">
-                    <slot name="breadcrumb">
-                        <AppBreadcrumb :items="breadcrumbItems" />
-                    </slot>
+                    <div class="flex justify-between items-center">
+                        <div class="page-title">
+                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
+                        </div>
+                        <div class="breadcrumb-nav">
+                            <slot name="breadcrumb">
+                                <AppBreadcrumb :items="breadcrumbItems" />
+                            </slot>
+                        </div>
+                    </div>
                 </div>
                 <slot />
             </div>
@@ -128,9 +139,32 @@ function isOutsideClicked(event) {
     border-bottom: 1px solid var(--surface-border);
 }
 
+.page-title h1 {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.breadcrumb-nav {
+    flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
     .layout-breadcrumb {
         padding: 0.75rem 1rem 0.5rem 1rem;
+    }
+    
+    .layout-breadcrumb .flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .page-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .breadcrumb-nav {
+        width: 100%;
     }
 }
 </style>
