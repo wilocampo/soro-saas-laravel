@@ -8,7 +8,8 @@
             <component
                 :is="component"
                 :id="fieldId"
-                v-model="modelValue"
+                :modelValue="modelValue"
+                @update:modelValue="$emit('update:modelValue', $event)"
                 :placeholder="placeholder"
                 :class="fieldClass"
                 :type="type"

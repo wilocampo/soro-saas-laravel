@@ -1,6 +1,7 @@
 <template>
     <Dialog
-        v-model:visible="visible"
+        :visible="visible"
+        @update:visible="$emit('update:visible', $event)"
         :header="title"
         :modal="true"
         :style="{ width: '50rem' }"
