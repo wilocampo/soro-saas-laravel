@@ -134,7 +134,7 @@ function isOutsideClicked(event) {
 
 <style scoped>
 .layout-breadcrumb {
-    padding: 1rem 2rem 0.5rem 2rem;
+    padding: 1rem 2rem 1rem 2rem;
     background: var(--surface-card);
     border-bottom: 1px solid var(--surface-border);
 }
@@ -150,7 +150,7 @@ function isOutsideClicked(event) {
 
 @media (max-width: 768px) {
     .layout-breadcrumb {
-        padding: 0.75rem 1rem 0.5rem 1rem;
+        padding: 0.75rem 1rem 0.75rem 1rem;
     }
     
     .layout-breadcrumb .flex {
