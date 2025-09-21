@@ -1,6 +1,6 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import AppFooter from '@/layout/AppFooter.vue';
 import AppSidebar from '@/layout/AppSidebar.vue';
 import AppTopbar from '@/layout/AppTopbar.vue';
