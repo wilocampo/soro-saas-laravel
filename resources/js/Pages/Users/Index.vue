@@ -12,7 +12,7 @@
                     :loading="loading"
                     :globalFilterFields="['name', 'email']"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
-                    @create="createUser"
+                    @create="openCreateModal"
                     @export="exportUsers"
                     @delete-selected="deleteSelectedUsers"
                 >
@@ -59,7 +59,7 @@
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Button
-                                        @click="editUser(data)"
+                                        @click="openEditModal(data)"
                                         icon="pi pi-pencil"
                                         class="p-button-icon-only p-button-rounded p-button-outlined mr-2"
                                         v-tooltip.top="'Edit'"
@@ -77,6 +77,149 @@
                 </CRUDDataTable>
             </div>
         </div>
+
+        <!-- Create User Modal -->
+        <CRUDModal
+            v-model:visible="createUserDialog"
+            title="Add New User"
+            submit-label="Create User"
+            submit-icon="pi pi-plus"
+            mode="create"
+            :loading="form.processing"
+            @submit="createUser"
+            @cancel="closeCreateModal"
+            @hide="closeCreateModal"
+        >
+            <template #fields>
+                <CRUDField
+                    v-model="form.name"
+                    label="Full Name"
+                    fieldId="name"
+                    placeholder="Enter full name"
+                    :error="form.errors.name"
+                    required
+                />
+                
+                <CRUDField
+                    v-model="form.email"
+                    label="Email Address"
+                    fieldId="email"
+                    type="email"
+                    placeholder="user@example.com"
+                    :error="form.errors.email"
+                    required
+                />
+                
+                <CRUDField
+                    v-model="form.password"
+                    label="Password"
+                    fieldId="password"
+                    component="Password"
+                    placeholder="Enter password"
+                    :error="form.errors.password"
+                    :feedback="false"
+                    :toggleMask="true"
+                    required
+                />
+                
+                <CRUDField
+                    v-model="form.password_confirmation"
+                    label="Confirm Password"
+                    fieldId="password_confirmation"
+                    component="Password"
+                    placeholder="Confirm password"
+                    :error="form.errors.password_confirmation"
+                    :feedback="false"
+                    :toggleMask="true"
+                    required
+                />
+                
+                <CRUDField
+                    v-model="form.roles"
+                    label="Roles"
+                    fieldId="roles"
+                    component="MultiSelect"
+                    placeholder="Select roles"
+                    :error="form.errors.roles"
+                    :options="roles"
+                    optionLabel="name"
+                    optionValue="id"
+                    display="chip"
+                    columnClass="col-12"
+                />
+            </template>
+        </CRUDModal>
+
+        <!-- Edit User Modal -->
+        <CRUDModal
+            v-model:visible="editUserDialog"
+            title="Edit User"
+            submit-label="Update User"
+            submit-icon="pi pi-check"
+            mode="edit"
+            :loading="editForm.processing"
+            @submit="updateUser"
+            @cancel="closeEditModal"
+            @hide="closeEditModal"
+        >
+            <template #fields>
+                <CRUDField
+                    v-model="editForm.name"
+                    label="Full Name"
+                    fieldId="edit_name"
+                    placeholder="Enter full name"
+                    :error="editForm.errors.name"
+                    required
+                />
+                
+                <CRUDField
+                    v-model="editForm.email"
+                    label="Email Address"
+                    fieldId="edit_email"
+                    type="email"
+                    placeholder="user@example.com"
+                    :error="editForm.errors.email"
+                    required
+                />
+                
+                <CRUDField
+                    v-model="editForm.password"
+                    label="Password"
+                    fieldId="edit_password"
+                    component="Password"
+                    placeholder="Leave blank to keep current password"
+                    :error="editForm.errors.password"
+                    :feedback="false"
+                    :toggleMask="true"
+                    helpText="Leave blank to keep current password"
+                />
+                
+                <CRUDField
+                    v-model="editForm.password_confirmation"
+                    label="Confirm Password"
+                    fieldId="edit_password_confirmation"
+                    component="Password"
+                    placeholder="Confirm new password"
+                    :error="editForm.errors.password_confirmation"
+                    :feedback="false"
+                    :toggleMask="true"
+                />
+                
+                <CRUDField
+                    v-model="editForm.roles"
+                    label="Roles"
+                    fieldId="edit_roles"
+                    component="MultiSelect"
+                    placeholder="Select roles"
+                    :error="editForm.errors.roles"
+                    :options="roles"
+                    optionLabel="name"
+                    optionValue="id"
+                    display="chip"
+                    columnClass="col-12"
+                />
+            </template>
+        </CRUDModal>
 
         <!-- Delete Confirmation Dialog -->
         <Dialog
@@ -112,11 +255,14 @@ import { ref, computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import AppBreadcrumb from '@/components/AppBreadcrumb.vue';
 import CRUDDataTable from '@/components/CRUDDataTable.vue';
+import CRUDModal from '@/components/CRUDModal.vue';
+import CRUDField from '@/components/CRUDField.vue';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import Avatar from 'primevue/avatar';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
+import { useForm } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -129,8 +275,30 @@ const loading = ref(false);
 const globalFilter = ref('');
 const deleteUserDialog = ref(false);
 const selectedUser = ref(null);
-const selectedUsers = ref([]);
-const dt = ref();
+const selectedUsers = ref([]); // For bulk delete
+const dt = ref(); // Reference to DataTable component
+
+// Modal states
+const createUserDialog = ref(false);
+const editUserDialog = ref(false);
+const editingUser = ref(null);
+
+// Forms
+const form = useForm({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    roles: [],
+});
+
+const editForm = useForm({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    roles: [],
+});
 
 // Breadcrumb items
 const breadcrumbItems = computed(() => [
@@ -147,13 +315,49 @@ const filteredUsers = computed(() => {
     );
 });
 
-// Methods
-const createUser = () => {
-    router.visit('/users/create');
+// Modal methods
+const openCreateModal = () => {
+    form.reset();
+    createUserDialog.value = true;
 };
 
-const editUser = (user) => {
-    router.visit(`/users/${user.id}/edit`);
+const closeCreateModal = () => {
+    createUserDialog.value = false;
+    form.reset();
+};
+
+const openEditModal = (user) => {
+    editingUser.value = user;
+    editForm.reset();
+    editForm.name = user.name;
+    editForm.email = user.email;
+    editForm.roles = user.roles?.map(role => role.id) || [];
+    editUserDialog.value = true;
+};
+
+const closeEditModal = () => {
+    editUserDialog.value = false;
+    editingUser.value = null;
+    editForm.reset();
+};
+
+// CRUD methods
+const createUser = () => {
+    form.post('/users', {
+        onSuccess: () => {
+            closeCreateModal();
+        }
+    });
+};
+
+const updateUser = () => {
+    if (editingUser.value) {
+        editForm.put(`/users/${editingUser.value.id}`, {
+            onSuccess: () => {
+                closeEditModal();
+            }
+        });
+    }
 };
 
 const confirmDeleteUser = (user) => {
@@ -174,7 +378,6 @@ const deleteUser = () => {
 
 const deleteSelectedUsers = () => {
     if (selectedUsers.value && selectedUsers.value.length > 0) {
-        // Implement bulk delete functionality
         const userIds = selectedUsers.value.map(user => user.id);
         router.delete('/users/bulk-delete', {
             data: { ids: userIds },
@@ -186,7 +389,6 @@ const deleteSelectedUsers = () => {
 };
 
 const exportUsers = () => {
-    // Implement export functionality
     console.log('Export users functionality to be implemented');
 };
 

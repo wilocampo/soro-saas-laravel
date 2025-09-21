@@ -50,6 +50,9 @@ createInertiaApp({
         // Register PrimeVue components globally
         app.component('Breadcrumb', Breadcrumb);
         
+        // Register custom components globally
+        app.component('CRUDModal', () => import('@/components/CRUDModal.vue'));
+        
         return app.mount(el);
     },
     progress: {
