@@ -17,7 +17,7 @@
                     @delete-selected="deleteSelectedUsers"
                 >
                     <template #columns>
-                        <Column field="name" header="Name" sortable style="min-width: 12rem">
+                        <Column field="name" header="Name" sortable style="min-width: 12rem" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Avatar
@@ -31,13 +31,13 @@
                             </template>
                         </Column>
                         
-                        <Column field="email" header="Email" sortable style="min-width: 16rem">
+                        <Column field="email" header="Email" sortable style="min-width: 16rem" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <span class="text-600 text-sm">{{ data.email }}</span>
                             </template>
                         </Column>
                         
-                        <Column field="roles" header="Roles" sortable style="min-width: 10rem">
+                        <Column field="roles" header="Roles" sortable style="min-width: 10rem" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <div class="flex flex-wrap gap-1">
                                     <Tag
@@ -52,13 +52,13 @@
                             </template>
                         </Column>
                         
-                        <Column field="created_at" header="Created" sortable style="min-width: 12rem">
+                        <Column field="created_at" header="Created" sortable style="min-width: 12rem" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <span class="text-900">{{ formatDate(data.created_at) }}</span>
                             </template>
                         </Column>
                         
-                        <Column header="Actions" :exportable="false" style="min-width: 12rem">
+                        <Column header="Actions" :exportable="false" style="min-width: 12rem" bodyClass="flex align-items-center">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Button
