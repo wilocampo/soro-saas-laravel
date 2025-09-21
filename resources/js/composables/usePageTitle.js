@@ -56,6 +56,7 @@ export function usePageTitle() {
     
     // Watch for title changes and update document title
     watch(pageTitle, (newTitle) => {
+        console.log('Setting document title to:', newTitle);
         document.title = newTitle;
     }, { immediate: true });
     
