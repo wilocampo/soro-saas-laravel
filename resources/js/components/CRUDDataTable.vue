@@ -40,7 +40,6 @@
             :globalFilterFields="globalFilterFields"
             :loading="loading"
             class="p-datatable-sm"
-            responsiveLayout="scroll"
             :globalFilter="globalFilter"
             :dataKey="dataKey"
         >

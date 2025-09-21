@@ -314,9 +314,6 @@ const breadcrumbItems = computed(() => [
 
 // Computed
 const filteredUsers = computed(() => {
-    console.log('props.users:', props.users);
-    console.log('props.users.data:', props.users.data);
-    
     if (!globalFilter.value) return props.users.data;
     
     return props.users.data.filter(user => 
