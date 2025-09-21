@@ -6,53 +6,18 @@
         
         <div class="grid">
             <div class="col-12">
-                <div class="card">
-                    <!-- Header -->
-                    <div class="flex flex-column sm:flex-row sm:align-items-center sm:justify-between mb-6 gap-3">
-                        <div class="flex align-items-center">
-                            <h1 class="text-3xl font-bold text-900 m-0">User Management</h1>
-                        </div>
-                    </div>
-
-                    <!-- Data Table -->
-                    <DataTable
-                        :value="filteredUsers"
-                        :paginator="true"
-                        :rows="10"
-                        :rowsPerPageOptions="[5, 10, 20, 50]"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
-                        :globalFilterFields="['name', 'email']"
-                        :loading="loading"
-                        class="p-datatable-sm"
-                        responsiveLayout="scroll"
-                        :globalFilter="globalFilter"
-                    >
-                        <template #header>
-                            <div class="flex flex-column sm:flex-row sm:align-items-center sm:justify-between gap-3">
-                                <div class="flex align-items-center">
-                                    <span class="text-900 font-semibold">Manage Users</span>
-                                </div>
-                                <div class="flex align-items-center gap-2">
-                                    <span class="p-input-icon-left">
-                                        <i class="pi pi-search" />
-                                        <InputText
-                                            v-model="globalFilter"
-                                            placeholder="Search users..."
-                                            class="w-full sm:w-20rem"
-                                        />
-                                    </span>
-                                    <Button
-                                        @click="createUser"
-                                        label="Add User"
-                                        icon="pi pi-plus"
-                                        class="p-button-success"
-                                    />
-                                </div>
-                            </div>
-                        </template>
-
-                        <Column field="name" header="User" sortable style="min-width: 200px">
+                <CRUDDataTable
+                    :data="filteredUsers"
+                    title="Manage Users"
+                    :loading="loading"
+                    :globalFilterFields="['name', 'email']"
+                    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+                    @create="createUser"
+                    @export="exportUsers"
+                    @delete-selected="deleteSelectedUsers"
+                >
+                    <template #columns>
+                        <Column field="name" header="Name" sortable style="min-width: 16rem">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Avatar
@@ -69,7 +34,7 @@
                             </template>
                         </Column>
                         
-                        <Column field="roles" header="Roles" sortable style="min-width: 150px">
+                        <Column field="roles" header="Roles" sortable style="min-width: 10rem">
                             <template #body="{ data }">
                                 <div class="flex flex-wrap gap-1">
                                     <Tag
@@ -84,47 +49,32 @@
                             </template>
                         </Column>
                         
-                        <Column field="created_at" header="Created" sortable style="min-width: 120px">
+                        <Column field="created_at" header="Created" sortable style="min-width: 12rem">
                             <template #body="{ data }">
                                 <span class="text-900">{{ formatDate(data.created_at) }}</span>
                             </template>
                         </Column>
                         
-                        <Column header="Actions" :exportable="false" style="min-width: 120px">
+                        <Column header="Actions" :exportable="false" style="min-width: 12rem">
                             <template #body="{ data }">
                                 <div class="flex align-items-center gap-2">
                                     <Button
-                                        @click="viewUser(data)"
-                                        icon="pi pi-eye"
-                                        severity="info"
-                                        text
-                                        rounded
-                                        size="small"
-                                        v-tooltip.top="'View'"
-                                    />
-                                    <Button
                                         @click="editUser(data)"
                                         icon="pi pi-pencil"
-                                        severity="warning"
-                                        text
-                                        rounded
-                                        size="small"
+                                        class="p-button-icon-only p-button-rounded p-button-outlined mr-2"
                                         v-tooltip.top="'Edit'"
                                     />
                                     <Button
                                         @click="confirmDeleteUser(data)"
                                         icon="pi pi-trash"
-                                        severity="danger"
-                                        text
-                                        rounded
-                                        size="small"
+                                        class="p-button-icon-only p-button-danger p-button-rounded p-button-outlined"
                                         v-tooltip.top="'Delete'"
                                     />
                                 </div>
                             </template>
                         </Column>
-                    </DataTable>
-                </div>
+                    </template>
+                </CRUDDataTable>
             </div>
         </div>
 
@@ -161,10 +111,9 @@
 import { ref, computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import AppBreadcrumb from '@/components/AppBreadcrumb.vue';
+import CRUDDataTable from '@/components/CRUDDataTable.vue';
 import Button from 'primevue/button';
-import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import InputText from 'primevue/inputtext';
 import Avatar from 'primevue/avatar';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
@@ -180,6 +129,8 @@ const loading = ref(false);
 const globalFilter = ref('');
 const deleteUserDialog = ref(false);
 const selectedUser = ref(null);
+const selectedUsers = ref([]);
+const dt = ref();
 
 // Breadcrumb items
 const breadcrumbItems = computed(() => [
@@ -201,10 +152,6 @@ const createUser = () => {
     router.visit('/users/create');
 };
 
-const viewUser = (user) => {
-    router.visit(`/users/${user.id}`);
-};
-
 const editUser = (user) => {
     router.visit(`/users/${user.id}/edit`);
 };
@@ -223,6 +170,24 @@ const deleteUser = () => {
             }
         });
     }
+};
+
+const deleteSelectedUsers = () => {
+    if (selectedUsers.value && selectedUsers.value.length > 0) {
+        // Implement bulk delete functionality
+        const userIds = selectedUsers.value.map(user => user.id);
+        router.delete('/users/bulk-delete', {
+            data: { ids: userIds },
+            onSuccess: () => {
+                selectedUsers.value = [];
+            }
+        });
+    }
+};
+
+const exportUsers = () => {
+    // Implement export functionality
+    console.log('Export users functionality to be implemented');
 };
 
 const formatDate = (date) => {
