@@ -252,7 +252,6 @@
                 />
             </template>
         </Dialog>
-            </div>
         </div>
     </AuthenticatedLayout>
 </template>
