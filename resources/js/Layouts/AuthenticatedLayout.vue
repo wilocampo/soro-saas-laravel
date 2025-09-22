@@ -110,12 +110,12 @@ function isOutsideClicked(event) {
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
             <div class="layout-main">
-                <div class="layout-breadcrumb mb-6">
+                <div class="py-4 px-8 mb-6 md:py-3 md:px-4 breadcrumb-container">
                     <div class="flex justify-between items-center w-full">
-                        <div class="page-title flex-shrink-0">
-                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0 whitespace-nowrap">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
+                        <div class="flex-shrink-0">
+                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0 m-0 leading-tight whitespace-nowrap md:text-xl">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
                         </div>
-                        <div class="breadcrumb-nav flex-shrink-0 ml-4">
+                        <div class="flex-shrink-0 ml-4 md:ml-0 md:w-full">
                             <slot name="breadcrumb">
                                 <AppBreadcrumb :items="breadcrumbItems" />
                             </slot>
@@ -132,22 +132,13 @@ function isOutsideClicked(event) {
 </template>
 
 <style scoped>
-.layout-breadcrumb {
-    @apply py-4 px-8 md:py-3 md:px-4;
+.breadcrumb-container {
     background: var(--surface-card);
     border-bottom: 1px solid var(--surface-border);
 }
 
-.page-title h1 {
-    @apply m-0 leading-tight md:text-xl;
-}
-
-.breadcrumb-nav {
-    @apply flex-shrink-0;
-}
-
 @media (max-width: 768px) {
-    .layout-breadcrumb .flex {
+    .flex {
         @apply flex-col items-start gap-3;
     }
 }
