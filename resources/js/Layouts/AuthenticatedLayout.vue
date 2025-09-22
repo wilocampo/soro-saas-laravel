@@ -111,11 +111,11 @@ function isOutsideClicked(event) {
         <div class="layout-main-container">
             <div class="layout-main">
                 <div class="layout-breadcrumb mb-6">
-                    <div class="flex justify-between items-center">
-                        <div class="page-title">
-                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
+                    <div class="flex justify-between items-center w-full">
+                        <div class="page-title flex-shrink-0">
+                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0 whitespace-nowrap">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
                         </div>
-                        <div class="breadcrumb-nav">
+                        <div class="breadcrumb-nav flex-shrink-0 ml-4">
                             <slot name="breadcrumb">
                                 <AppBreadcrumb :items="breadcrumbItems" />
                             </slot>
@@ -143,7 +143,7 @@ function isOutsideClicked(event) {
 }
 
 .breadcrumb-nav {
-    @apply flex-shrink-0 md:w-full;
+    @apply flex-shrink-0;
 }
 
 @media (max-width: 768px) {
