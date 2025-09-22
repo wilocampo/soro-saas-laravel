@@ -1,8 +1,7 @@
 <template>
     <AuthenticatedLayout>
-        <div class="p-4">
-            <div class="grid">
-                <div class="col-12">
+        <div class="grid">
+            <div class="col-12">
                     <CRUDDataTable
                     :data="filteredUsers"
                     title="Manage Users"
@@ -248,7 +247,6 @@
                 />
             </template>
         </Dialog>
-        </div>
     </AuthenticatedLayout>
 </template>
 
