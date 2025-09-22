@@ -151,9 +151,4 @@ function isOutsideClicked(event) {
         @apply flex-col items-start gap-3;
     }
 }
-
-/* Ensure desktop layout maintains justify-between */
-.layout-breadcrumb .flex {
-    @apply justify-between items-center;
-}
 </style>
