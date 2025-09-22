@@ -110,12 +110,12 @@ function isOutsideClicked(event) {
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
             <div class="layout-main">
-                <div class="layout-breadcrumb mb-6">
-                    <div class="flex justify-between items-center">
+                <div class="py-4 px-8 mb-6 bg-surface-card border-b border-surface-border md:py-3 md:px-4">
+                    <div class="flex justify-between items-center md:flex-col md:items-start md:gap-3">
                         <div class="page-title">
-                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
+                            <h1 class="text-2xl font-bold text-surface-900 dark:text-surface-0 m-0 leading-tight md:text-xl">{{ pageTitle.replace(' - Soro SaaS', '') }}</h1>
                         </div>
-                        <div class="breadcrumb-nav">
+                        <div class="flex-shrink-0 md:w-full">
                             <slot name="breadcrumb">
                                 <AppBreadcrumb :items="breadcrumbItems" />
                             </slot>
@@ -132,38 +132,5 @@ function isOutsideClicked(event) {
 </template>
 
 <style scoped>
-.layout-breadcrumb {
-    padding: 1rem 2rem 0.5rem 2rem;
-    background: var(--surface-card);
-    border-bottom: 1px solid var(--surface-border);
-}
-
-.page-title h1 {
-    margin: 0;
-    line-height: 1.2;
-}
-
-.breadcrumb-nav {
-    flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-    .layout-breadcrumb {
-        padding: 0.75rem 1rem 0.5rem 1rem;
-    }
-    
-    .layout-breadcrumb .flex {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-    }
-    
-    .page-title h1 {
-        font-size: 1.5rem;
-    }
-    
-    .breadcrumb-nav {
-        width: 100%;
-    }
-}
+/* All styles now handled by Tailwind utility classes */
 </style>
