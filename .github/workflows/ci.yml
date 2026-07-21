@@ -21,9 +21,10 @@ jobs:
         run: vendor/bin/pint --test
       - name: Larastan (static analysis)
         run: vendor/bin/phpstan analyse --no-progress
-      - name: Composer audit (informational until the dependency-update pass)
+      - name: Composer audit (blocking — dependency pass 2026-07-21 cleared all advisories)
         run: composer audit
-        continue-on-error: true
+      - name: npm audit (blocking)
+        run: npm audit --audit-level=moderate
 
   tests-sqlite:
     runs-on: ubuntu-latest
