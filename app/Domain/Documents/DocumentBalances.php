@@ -37,7 +37,7 @@ class DocumentBalances
         }
 
         $id = (int) $document->getKey();
-        $paid = $this->cashApplied($type, $id);
+        $paid = $this->cashApplied($type, $id) + (int) $document->getAttribute('opening_paid_centavos');
         $total = (int) $document->getAttribute('total_centavos');
         $outstanding = $total - $paid - $this->noteAdjustment($type, $id);
 
@@ -87,6 +87,9 @@ class DocumentBalances
 
         return (int) $document->getAttribute('total_centavos')
             - $this->cashApplied($type, $id)
+            // Part-paid before cutover: no allocation row exists to rebuild
+            // this from, so it is carried, not derived.
+            - (int) $document->getAttribute('opening_paid_centavos')
             - $this->noteAdjustment($type, $id);
     }
 
