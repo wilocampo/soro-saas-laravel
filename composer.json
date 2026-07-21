@@ -15,9 +15,11 @@
         "laravel/telescope": "^5.11",
         "laravel/tinker": "^2.10.1",
         "nwidart/laravel-modules": "^12.0",
+        "spatie/browsershot": "^5.4",
         "spatie/laravel-backup": "^9.3",
         "spatie/laravel-medialibrary": "^11.15",
         "spatie/laravel-multitenancy": "^4.0",
+        "spatie/laravel-pdf": "^2.12",
         "spatie/laravel-permission": "^6.21",
         "tightenco/ziggy": "^2.0",
         "wikimedia/composer-merge-plugin": "^2.1"

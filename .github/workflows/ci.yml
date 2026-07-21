@@ -92,5 +92,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      # Puppeteer ships the invoice PDF renderer in production, but this job
+      # only compiles assets — skip the ~150 MB Chrome download.
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
       - run: npm run build

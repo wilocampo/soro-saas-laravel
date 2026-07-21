@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Tenant;
 
+use App\Domain\Ledger\Models\CompanyProfile;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -162,6 +163,20 @@ class LedgerCoreSeeder extends Seeder
         DB::table('tax_codes')->insert([
             ['code' => 'OV12', 'kind' => 'output_vat', 'rate_bp' => 1200, 'account_id' => $accountId['2100'], 'default_atc' => null, 'effective_from' => '2024-01-01', 'effective_to' => null],
             ['code' => 'IV12', 'kind' => 'input_vat', 'rate_bp' => 1200, 'account_id' => $accountId['1200'], 'default_atc' => null, 'effective_from' => '2024-01-01', 'effective_to' => null],
+        ]);
+
+        // --- BIR registration singleton (03 §1) ---------------------------
+        // Deliberately a PLACEHOLDER: an unconfigured profile blocks invoice
+        // issuance rather than printing a wrong TIN on a legal document.
+        DB::table('company_profile')->insert([
+            'id' => 1,
+            'registered_name' => 'Unconfigured — set the registered name',
+            'registered_address' => 'Unconfigured — set the registered address',
+            'tin' => CompanyProfile::PLACEHOLDER_TIN,
+            'branch_code' => '000',
+            'is_twa' => false,
+            'accn' => null,
+            'registration_mode' => 'cas',
         ]);
 
         // --- settings singleton ------------------------------------------
