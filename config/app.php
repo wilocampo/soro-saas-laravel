@@ -17,6 +17,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Single-Tenant Mode (HANDOFF §1)
+    |--------------------------------------------------------------------------
+    | true  => per-client VPS install: public registration disabled; the
+    |          instance is seeded with exactly one tenant.
+    | false => open SaaS with tenant signup + billing.
+    */
+    'single_tenant' => env('SINGLE_TENANT', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
@@ -65,7 +75,10 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Asia/Manila app-wide (D18): entry dates, period boundaries, posting
+    // lock comparisons, and audit partitions are Manila dates — a UTC app
+    // clock produces off-by-one-day close bugs on Dec 31/Jan 1.
+    'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
 
     /*
     |--------------------------------------------------------------------------

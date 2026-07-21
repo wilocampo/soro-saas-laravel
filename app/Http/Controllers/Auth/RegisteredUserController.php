@@ -20,6 +20,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
+        // SINGLE_TENANT mode (per-client VPS): public registration is disabled.
+        abort_if(config('app.single_tenant'), 404);
+
         return Inertia::render('Auth/Register');
     }
 
@@ -30,6 +33,9 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // SINGLE_TENANT mode (per-client VPS): public registration is disabled.
+        abort_if(config('app.single_tenant'), 404);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
