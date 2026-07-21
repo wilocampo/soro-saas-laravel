@@ -1,13 +1,12 @@
 <script setup>
-import { computed } from 'vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
+import AuthCardLayout from '@/Layouts/AuthCardLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import { computed } from 'vue';
 
 const props = defineProps({
-    status: {
-        type: String,
-    },
+    status: String,
 });
 
 const form = useForm({});
@@ -16,46 +15,32 @@ const submit = () => {
     form.post(route('verification.send'));
 };
 
-const verificationLinkSent = computed(
-    () => props.status === 'verification-link-sent',
-);
+const verificationLinkSent = computed(() => props.status === 'verification-link-sent');
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Email Verification" />
+    <Head title="Email Verification" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            Thanks for signing up! Before getting started, could you verify your
-            email address by clicking on the link we just emailed to you? If you
-            didn't receive the email, we will gladly send you another.
-        </div>
+    <AuthCardLayout
+        title="Verify your email"
+        subtitle="Click the link in the email we sent you — or request another below"
+    >
+        <div class="w-full md:w-[26rem]">
+            <Message v-if="verificationLinkSent" severity="success" :closable="false" class="mb-6">
+                A new verification link has been sent to the email address you provided during registration.
+            </Message>
 
-        <div
-            class="mb-4 text-sm font-medium text-green-600"
-            v-if="verificationLinkSent"
-        >
-            A new verification link has been sent to the email address you
-            provided during registration.
-        </div>
-
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Resend Verification Email
-                </PrimaryButton>
-
+            <form @submit.prevent="submit" class="flex items-center justify-between gap-4">
                 <Link
                     :href="route('logout')"
                     method="post"
                     as="button"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Log Out</Link
+                    class="font-medium no-underline cursor-pointer text-primary bg-transparent border-0 p-0"
                 >
-            </div>
-        </form>
-    </GuestLayout>
+                    Log out
+                </Link>
+                <Button label="Resend Verification Email" type="submit" :loading="form.processing" />
+            </form>
+        </div>
+    </AuthCardLayout>
 </template>

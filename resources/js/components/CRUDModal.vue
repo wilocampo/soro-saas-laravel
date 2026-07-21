@@ -68,12 +68,17 @@ const props = defineProps({
         type: String,
         default: 'create', // 'create' or 'edit'
         validator: (value) => ['create', 'edit'].includes(value)
+    },
+    // Overrides the mode-derived severity (e.g. 'danger' for destructive submits)
+    severity: {
+        type: String,
+        default: null
     }
 });
 
 const emit = defineEmits(['update:visible', 'submit', 'cancel', 'hide']);
 
-const submitSeverity = computed(() => (props.mode === 'create' ? 'success' : 'primary'));
+const submitSeverity = computed(() => props.severity ?? (props.mode === 'create' ? 'success' : 'primary'));
 
 const onHide = () => {
     emit('update:visible', false);

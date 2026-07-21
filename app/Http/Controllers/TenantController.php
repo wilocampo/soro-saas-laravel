@@ -13,7 +13,7 @@ class TenantController extends Controller
 {
     public function index(): Response
     {
-        $tenants = Tenant::with('users')->paginate(10);
+        $tenants = Tenant::withCount('users')->paginate(10);
 
         return Inertia::render('Tenants/Index', [
             'tenants' => $tenants,

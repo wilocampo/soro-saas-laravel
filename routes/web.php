@@ -5,6 +5,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -21,9 +22,25 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/notifications', function () {
-    return Inertia::render('Notifications');
+Route::get('/notifications', function (Request $request) {
+    // Laravel database notifications; real producers arrive with their
+    // features (backup failures, period close, provisioning) — spec 10 §6.
+    return Inertia::render('Notifications', [
+        'notifications' => $request->user()->notificationSummaries(),
+    ]);
 })->middleware(['auth', 'verified'])->name('notifications');
+
+Route::post('/notifications/read', function (Request $request) {
+    $request->user()->unreadNotifications->markAsRead();
+
+    return back();
+})->middleware(['auth', 'verified'])->name('notifications.read');
+
+Route::post('/notifications/{id}/read', function (Request $request, string $id) {
+    $request->user()->notifications()->where('id', $id)->first()?->markAsRead();
+
+    return back();
+})->middleware(['auth', 'verified'])->name('notifications.read-one');
 
 // Test route to verify routing works
 Route::get('/test-users', function () {

@@ -1,15 +1,12 @@
 <script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import AuthCardLayout from '@/Layouts/AuthCardLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
 
 defineProps({
-    status: {
-        type: String,
-    },
+    status: String,
 });
 
 const form = useForm({
@@ -22,47 +19,34 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Forgot Password" />
+    <Head title="Forgot Password" />
 
-        <div class="mb-4 text-sm text-gray-600">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
-        </div>
+    <AuthCardLayout
+        title="Forgot password"
+        subtitle="We'll email you a password reset link"
+    >
+        <Message v-if="status" severity="success" :closable="false" class="mb-6">{{ status }}</Message>
 
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
-            {{ status }}
-        </div>
+        <form @submit.prevent="submit" class="w-full md:w-[26rem]">
+            <label for="email" class="block text-surface-900 dark:text-surface-0 font-medium mb-2">Email</label>
+            <InputText
+                id="email"
+                type="email"
+                class="w-full"
+                v-model="form.email"
+                :invalid="!!form.errors.email"
+                autocomplete="username"
+                autofocus
+                required
+            />
+            <small v-if="form.errors.email" class="block text-red-500 mt-1">{{ form.errors.email }}</small>
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Email Password Reset Link
-                </PrimaryButton>
+            <div class="flex items-center justify-between mt-6">
+                <Link :href="route('login')" class="font-medium no-underline cursor-pointer text-primary">
+                    Back to log in
+                </Link>
+                <Button label="Email Reset Link" type="submit" :loading="form.processing" />
             </div>
         </form>
-    </GuestLayout>
+    </AuthCardLayout>
 </template>

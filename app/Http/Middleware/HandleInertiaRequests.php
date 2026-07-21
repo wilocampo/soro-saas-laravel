@@ -39,6 +39,11 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            // Topbar bell: unread count + the five most recent.
+            'notificationsMenu' => fn () => $request->user() ? [
+                'unreadCount' => $request->user()->unreadNotifications()->count(),
+                'recent' => $request->user()->notificationSummaries(5),
+            ] : null,
             // Flash bridge (spec 11 §2 rule 4): controllers redirect with
             // ->with('success'|'error'|...); AuthenticatedLayout toasts them.
             'flash' => fn () => [

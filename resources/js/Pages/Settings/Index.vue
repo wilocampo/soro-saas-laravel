@@ -1,240 +1,163 @@
 <template>
-    <AuthenticatedLayout>
-        <div class="p-6">
-            <div class="max-w-4xl mx-auto">
-                <!-- Header -->
-                <div class="mb-8">
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">System Settings</h1>
-                    <p class="text-gray-600 dark:text-gray-400">Configure your application settings</p>
+    <AuthenticatedLayout title="Settings">
+        <form @submit.prevent="submit" class="flex flex-col gap-6 max-w-4xl">
+            <FormSection title="General" description="Business identity and contact details.">
+                <CRUDField
+                    v-model="form.app_name"
+                    label="Application Name"
+                    fieldId="app_name"
+                    placeholder="Enter application name"
+                    :error="form.errors.app_name"
+                />
+
+                <CRUDField
+                    v-model="form.contact_email"
+                    label="Contact Email"
+                    fieldId="contact_email"
+                    type="email"
+                    placeholder="contact@example.com"
+                    :error="form.errors.contact_email"
+                />
+
+                <CRUDField
+                    v-model="form.contact_phone"
+                    label="Contact Phone"
+                    fieldId="contact_phone"
+                    placeholder="+63 917 123 4567"
+                    :error="form.errors.contact_phone"
+                />
+
+                <CRUDField
+                    v-model="form.timezone"
+                    label="Timezone"
+                    fieldId="timezone"
+                    component="Select"
+                    :options="timezones"
+                    placeholder="Select timezone"
+                    :error="form.errors.timezone"
+                    helpText="Books and period boundaries follow Asia/Manila (D18)."
+                />
+
+                <CRUDField
+                    v-model="form.address"
+                    label="Address"
+                    fieldId="address"
+                    component="Textarea"
+                    rows="3"
+                    placeholder="Enter your business address"
+                    :error="form.errors.address"
+                    columnClass="col-span-12"
+                />
+            </FormSection>
+
+            <FormSection title="Appearance" description="Brand colors used across the app.">
+                <ColorField
+                    v-model="form.primary_color"
+                    label="Primary Color"
+                    fieldId="primary_color"
+                    :error="form.errors.primary_color"
+                />
+
+                <ColorField
+                    v-model="form.secondary_color"
+                    label="Secondary Color"
+                    fieldId="secondary_color"
+                    :error="form.errors.secondary_color"
+                />
+            </FormSection>
+
+            <FormSection title="Branding" description="Logo and favicon shown in the shell and on documents.">
+                <div class="col-span-12 md:col-span-6">
+                    <div class="flex flex-col gap-2">
+                        <label class="font-medium text-surface-900 dark:text-surface-0">Application Logo</label>
+                        <FileUpload
+                            mode="basic"
+                            customUpload
+                            accept="image/*"
+                            :maxFileSize="2000000"
+                            chooseLabel="Choose Logo"
+                            @select="form.app_logo = $event.files[0] ?? null"
+                        />
+                        <small class="text-muted-color text-sm">Recommended size: 200x50px, max 2MB.</small>
+                        <small v-if="form.errors.app_logo" class="text-red-500">{{ form.errors.app_logo }}</small>
+                    </div>
                 </div>
 
-                <form @submit.prevent="submit" class="space-y-8">
-                    <!-- General Settings -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">General Settings</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Application Name
-                                </label>
-                                <InputText
-                                    v-model="form.app_name"
-                                    placeholder="Enter application name"
-                                    class="w-full"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Contact Email
-                                </label>
-                                <InputText
-                                    v-model="form.contact_email"
-                                    type="email"
-                                    placeholder="contact@example.com"
-                                    class="w-full"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Contact Phone
-                                </label>
-                                <InputText
-                                    v-model="form.contact_phone"
-                                    placeholder="+1 (555) 123-4567"
-                                    class="w-full"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Timezone
-                                </label>
-                                <Dropdown
-                                    v-model="form.timezone"
-                                    :options="timezones"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Select timezone"
-                                    class="w-full"
-                                />
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Address
-                            </label>
-                            <Textarea
-                                v-model="form.address"
-                                placeholder="Enter your business address"
-                                rows="3"
-                                class="w-full"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Appearance Settings -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Appearance</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Primary Color
-                                </label>
-                                <div class="flex items-center space-x-3">
-                                    <input
-                                        v-model="form.primary_color"
-                                        type="color"
-                                        class="w-12 h-10 rounded border border-gray-300 dark:border-gray-600"
-                                    />
-                                    <InputText
-                                        v-model="form.primary_color"
-                                        placeholder="#3B82F6"
-                                        class="flex-1"
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Secondary Color
-                                </label>
-                                <div class="flex items-center space-x-3">
-                                    <input
-                                        v-model="form.secondary_color"
-                                        type="color"
-                                        class="w-12 h-10 rounded border border-gray-300 dark:border-gray-600"
-                                    />
-                                    <InputText
-                                        v-model="form.secondary_color"
-                                        placeholder="#10B981"
-                                        class="flex-1"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- File Uploads -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Branding</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Application Logo
-                                </label>
-                                <FileUpload
-                                    mode="basic"
-                                    :auto="true"
-                                    accept="image/*"
-                                    :maxFileSize="2000000"
-                                    @upload="handleLogoUpload"
-                                    chooseLabel="Choose Logo"
-                                    class="w-full"
-                                />
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Recommended size: 200x50px, Max size: 2MB
-                                </p>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Favicon
-                                </label>
-                                <FileUpload
-                                    mode="basic"
-                                    :auto="true"
-                                    accept="image/*"
-                                    :maxFileSize="1000000"
-                                    @upload="handleFaviconUpload"
-                                    chooseLabel="Choose Favicon"
-                                    class="w-full"
-                                />
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Recommended size: 32x32px, Max size: 1MB
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="flex justify-end">
-                        <Button
-                            type="submit"
-                            label="Save Settings"
-                            icon="pi pi-save"
-                            :loading="processing"
+                <div class="col-span-12 md:col-span-6">
+                    <div class="flex flex-col gap-2">
+                        <label class="font-medium text-surface-900 dark:text-surface-0">Favicon</label>
+                        <FileUpload
+                            mode="basic"
+                            customUpload
+                            accept="image/*"
+                            :maxFileSize="1000000"
+                            chooseLabel="Choose Favicon"
+                            @select="form.app_favicon = $event.files[0] ?? null"
                         />
+                        <small class="text-muted-color text-sm">Recommended size: 32x32px, max 1MB.</small>
+                        <small v-if="form.errors.app_favicon" class="text-red-500">{{ form.errors.app_favicon }}</small>
                     </div>
-                </form>
+                </div>
+            </FormSection>
+
+            <div class="flex justify-end">
+                <Button
+                    type="submit"
+                    label="Save Settings"
+                    icon="pi pi-save"
+                    :loading="form.processing"
+                />
             </div>
-        </div>
+        </form>
     </AuthenticatedLayout>
 </template>
 
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import Textarea from 'primevue/textarea';
-import Dropdown from 'primevue/dropdown';
-import FileUpload from 'primevue/fileupload';
+import ColorField from '@/components/ColorField.vue';
+import CRUDField from '@/components/CRUDField.vue';
+import FormSection from '@/components/FormSection.vue';
+import { useAppToast } from '@/composables/useAppToast';
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import Button from 'primevue/button';
+import FileUpload from 'primevue/fileupload';
 
 const props = defineProps({
     settings: Object
 });
 
-const processing = ref(false);
+const toast = useAppToast();
 
 const form = useForm({
     app_name: props.settings?.app_name || '',
     contact_email: props.settings?.contact_email || '',
     contact_phone: props.settings?.contact_phone || '',
     address: props.settings?.address || '',
-    timezone: props.settings?.timezone || 'UTC',
+    timezone: props.settings?.timezone || 'Asia/Manila',
     primary_color: props.settings?.primary_color || '#3B82F6',
     secondary_color: props.settings?.secondary_color || '#10B981',
     app_logo: null,
     app_favicon: null,
 });
 
+// PH-first (D18); UTC kept for ops-only tenants.
 const timezones = [
+    { label: 'Asia/Manila', value: 'Asia/Manila' },
     { label: 'UTC', value: 'UTC' },
-    { label: 'America/New_York', value: 'America/New_York' },
-    { label: 'America/Chicago', value: 'America/Chicago' },
-    { label: 'America/Denver', value: 'America/Denver' },
-    { label: 'America/Los_Angeles', value: 'America/Los_Angeles' },
-    { label: 'Europe/London', value: 'Europe/London' },
-    { label: 'Europe/Paris', value: 'Europe/Paris' },
+    { label: 'Asia/Singapore', value: 'Asia/Singapore' },
+    { label: 'Asia/Hong_Kong', value: 'Asia/Hong_Kong' },
     { label: 'Asia/Tokyo', value: 'Asia/Tokyo' },
-    { label: 'Asia/Shanghai', value: 'Asia/Shanghai' },
+    { label: 'America/Los_Angeles', value: 'America/Los_Angeles' },
+    { label: 'America/New_York', value: 'America/New_York' },
+    { label: 'Europe/London', value: 'Europe/London' },
 ];
 
-const handleLogoUpload = (event) => {
-    form.app_logo = event.files[0];
-};
-
-const handleFaviconUpload = (event) => {
-    form.app_favicon = event.files[0];
-};
-
 const submit = () => {
-    processing.value = true;
-    form.put('/settings', {
-        onFinish: () => {
-            processing.value = false;
-        }
+    // File uploads require multipart POST — PUT bodies don't carry files
+    // through PHP, so spoof the method.
+    form.transform((data) => ({ ...data, _method: 'put' })).post('/settings', {
+        preserveScroll: true,
+        onSuccess: () => toast.success('Settings saved'),
     });
 };
 </script>
-
-
-
-

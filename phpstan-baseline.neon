@@ -43,12 +43,6 @@ parameters:
 			path: app/Http/Controllers/TenantController.php
 
 		-
-			message: '#^Relation ''users'' is not found in App\\Models\\Tenant model\.$#'
-			identifier: larastan.relationExistence
-			count: 1
-			path: app/Http/Controllers/TenantController.php
-
-		-
 			message: '#^Method App\\Http\\Controllers\\UserController\:\:destroy\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1
@@ -101,6 +95,12 @@ parameters:
 			identifier: missingType.return
 			count: 1
 			path: app/Models/Tenant.php
+
+		-
+			message: '#^Method App\\Models\\User\:\:notificationSummaries\(\) should return Illuminate\\Support\\Collection\<int, array\<string, mixed\>\> but returns Illuminate\\Support\\Collection\<int, array\{id\: mixed, type\: mixed, title\: mixed, message\: mixed, time\: mixed, read\: bool\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/User.php
 
 		-
 			message: '#^Method App\\Models\\User\:\:tenant\(\) has no return type specified\.$#'
