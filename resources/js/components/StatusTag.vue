@@ -27,6 +27,11 @@ const SEVERITIES = {
     open: 'success',
     closed: 'warn',
     locked: 'danger',
+    // documents (spec 02/03) — cancelled is not an error state, it is the
+    // lawful outcome for a document that never should have been issued.
+    issued: 'info',
+    paid: 'success',
+    cancelled: 'danger',
     // provisioning / jobs / backups
     pending: 'warn',
     provisioning: 'info',

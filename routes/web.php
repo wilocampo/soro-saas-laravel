@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\AgingController;
+use App\Http\Controllers\PartnerController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VendorBillController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +75,26 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     ]);
     Route::get('/tenant-settings', [SettingsController::class, 'index'])->name('tenant.settings.index');
     Route::put('/tenant-settings', [SettingsController::class, 'update'])->name('tenant.settings.update');
+
+    // --- documents (Phase 2) ------------------------------------------
+    // Ledger tables live in the tenant DB, so every route here is tenant-
+    // scoped by construction. No document is ever destroyed: invoices and
+    // bills are CANCELLED (CLAUDE.md #4) and partners are deactivated.
+    Route::resource('partners', PartnerController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('invoices', SalesInvoiceController::class)->only(['index', 'create', 'store', 'show']);
+    Route::get('invoices/{invoice}/pdf', [SalesInvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::post('invoices/{invoice}/email', [SalesInvoiceController::class, 'email'])->name('invoices.email');
+    Route::post('invoices/{invoice}/cancel', [SalesInvoiceController::class, 'cancel'])->name('invoices.cancel');
+
+    Route::resource('bills', VendorBillController::class)->only(['index', 'create', 'store', 'show'])
+        ->parameters(['bills' => 'bill']);
+    Route::post('bills/{bill}/receipt', [VendorBillController::class, 'attachReceipt'])->name('bills.receipt');
+
+    Route::resource('payments', PaymentController::class)->only(['index', 'create', 'store']);
+    Route::get('payments/open-documents', [PaymentController::class, 'openDocuments'])->name('payments.open-documents');
+
+    Route::get('/reports/aging', [AgingController::class, 'index'])->name('reports.aging');
 });
 
 Route::middleware('auth')->group(function () {

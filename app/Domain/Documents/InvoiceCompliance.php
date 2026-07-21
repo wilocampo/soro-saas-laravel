@@ -31,9 +31,14 @@ class InvoiceCompliance
     public const BUYER_TIN_THRESHOLD_CENTAVOS = 100_000;
 
     /**
+     * @param  bool  $requireSerial  false while the invoice is still being
+     *                               issued: the serial is drawn by the poster
+     *                               INSIDE the posting transaction, so it
+     *                               cannot exist yet when the pre-post gate
+     *                               runs. See assertIssuable().
      * @return array{fatal: list<string>, warnings: list<string>}
      */
-    public function check(SalesInvoice $invoice): array
+    public function check(SalesInvoice $invoice, bool $requireSerial = true): array
     {
         $fatal = [];
         $warnings = [];
@@ -64,7 +69,7 @@ class InvoiceCompliance
         // to check here; the column itself is the enforcement.
 
         // (5) serial number, printed prominently
-        if (($invoice->invoice_number ?? '') === '') {
+        if ($requireSerial && ($invoice->invoice_number ?? '') === '') {
             $fatal[] = 'The invoice has no serial number (mandatory field 5).';
         }
 
@@ -111,10 +116,14 @@ class InvoiceCompliance
         return ['fatal' => $fatal, 'warnings' => $warnings];
     }
 
-    /** Hard gate before an invoice is handed to a customer. */
+    /**
+     * Hard gate, run BEFORE the serial is drawn so a rejected invoice burns
+     * no number (CLAUDE.md #6). The serial itself is therefore exempt here —
+     * `check()` still requires it for anything being rendered or delivered.
+     */
     public function assertIssuable(SalesInvoice $invoice): void
     {
-        $result = $this->check($invoice);
+        $result = $this->check($invoice, requireSerial: $invoice->invoice_number !== null);
 
         if ($result['fatal'] !== []) {
             throw new InvoiceNotCompliant(

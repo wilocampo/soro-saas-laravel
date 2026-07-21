@@ -5,14 +5,21 @@ namespace App\Domain\Documents\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * A collection (received) or disbursement (paid). Under cash basis this is
  * where revenue/expense recognition happens, expanding each allocated
  * document's stored tax snapshot (docs/specs/02 §4.2).
  */
-class Payment extends Model
+class Payment extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
+    /** Deposit slip, bank confirmation, the customer's 2307. */
+    public const RECEIPTS = 'receipts';
+
     protected $table = 'payments';
 
     protected $guarded = ['id'];
@@ -22,6 +29,12 @@ class Payment extends Model
         'amount_centavos' => 'integer',
         'ewt_centavos' => 'integer',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(self::RECEIPTS)
+            ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic']);
+    }
 
     /** @return HasMany<PaymentAllocation, $this> */
     public function allocations(): HasMany
