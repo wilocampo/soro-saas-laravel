@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePasswordIsFresh;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LandlordMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -18,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            // Password rotation (spec 04): an expired user may only reach
+            // the profile/password/logout routes until they rotate.
+            EnsurePasswordIsFresh::class,
         ]);
 
         $middleware->alias([

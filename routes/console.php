@@ -14,3 +14,11 @@ Schedule::command('tenants:backup')->dailyAt('01:30');
 
 // Monthly proof-of-restore with a logged outcome (docs/specs/10 §1).
 Schedule::command('tenants:backup-restore-test')->monthlyOn(1, '03:00');
+
+// Nightly ledger reconciliation (docs/specs/10 §6): a hash-chain break or
+// balance drift is a sev-1 page, not a log line — hence emailOutputOnFailure
+// once alerting is configured. Runs per tenant via tenants:artisan (Phase 2 ops).
+Schedule::command('ledger:verify')->dailyAt('02:30');
+
+// Password-rotation notices (docs/specs/04, 10 §5).
+Schedule::command('users:password-rotation-check')->dailyAt('08:00');

@@ -43,6 +43,10 @@ class LedgerCoreSeeder extends Seeder
             ['1100', 'Accounts Receivable', 'asset', 'debit', false, false],
             ['1150', 'Creditable Withholding Tax', 'asset', 'debit', false, false], // 2307 asset
             ['1200', 'Input VAT', 'asset', 'debit', false, false],
+            ['1500', 'Equipment', 'asset', 'debit', false, false],
+            // Contra-asset: type is asset but the normal balance is flipped
+            // (01 §1.2) — the balance cache signs from normal_balance.
+            ['1590', 'Accumulated Depreciation', 'asset', 'credit', true, false],
             ['2000', 'Accounts Payable', 'liability', 'credit', false, false],
             ['2100', 'Output VAT', 'liability', 'credit', false, false],
             ['2150', 'Withholding Tax Payable', 'liability', 'credit', false, false], // 1601EQ
@@ -53,6 +57,7 @@ class LedgerCoreSeeder extends Seeder
             ['4000', 'Sales Revenue', 'income', 'credit', false, false],
             ['4900', 'Other Income', 'income', 'credit', false, false],
             ['5000', 'Operating Expense', 'expense', 'debit', false, false],
+            ['5100', 'Depreciation Expense', 'expense', 'debit', false, false],
             ['5900', 'Rounding Gain/Loss', 'expense', 'debit', false, true],
         ];
         DB::table('accounts')->insert(array_map(fn (array $a, int $i) => [

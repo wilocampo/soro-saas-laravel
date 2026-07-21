@@ -22,6 +22,7 @@ class PasswordController extends Controller
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'password_changed_at' => now(),   // starts a fresh rotation window (spec 04)
         ]);
 
         return back();

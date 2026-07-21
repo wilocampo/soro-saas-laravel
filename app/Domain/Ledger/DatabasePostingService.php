@@ -359,14 +359,20 @@ final class DatabasePostingService implements PostingService
     {
         $series = self::BOOK_SERIES[$journalBook];
 
+        // BIR serials are per document type PER BRANCH — the unique key is
+        // (document_type, fiscal_year, branch_id), so all three must be in
+        // the lookup or a multi-branch tenant would draw an arbitrary row.
+        $branchId = $this->currentBranchId();
+
         $sequence = DB::table('document_sequences')
             ->where('document_type', $series)
             ->where('fiscal_year', $fiscalYearId)
+            ->where('branch_id', $branchId)
             ->lockForUpdate()
             ->first();
 
         if ($sequence === null) {
-            throw new InvalidDraft("No document sequence for series [{$series}] in fiscal year [{$fiscalYearId}].");
+            throw new InvalidDraft("No document sequence for series [{$series}] in fiscal year [{$fiscalYearId}] at branch [{$branchId}].");
         }
         if ($sequence->prefix === '') {
             throw new InvalidDraft("Sequence [{$series}] has an empty prefix — it must embed series and year label (01 §3).");
@@ -443,6 +449,23 @@ final class DatabasePostingService implements PostingService
         }
 
         return CarbonImmutable::parse($firstOpen->start_date);
+    }
+
+    /**
+     * The branch a posting belongs to. v1 UI is single-branch, so this is
+     * the main branch; multi-branch posting context arrives with the branch
+     * UI (01 §7) — the schema and the sequence lookup are already ready.
+     */
+    private function currentBranchId(): int
+    {
+        $id = DB::table('branches')->where('is_main', true)->where('is_active', true)->value('id')
+            ?? DB::table('branches')->where('is_active', true)->orderBy('id')->value('id');
+
+        if ($id === null) {
+            throw new InvalidDraft('No active branch is configured — document series are per branch (01 §7).');
+        }
+
+        return (int) $id;
     }
 
     /** Interactive actor, else the seeded system user (01 §7 system actor). */

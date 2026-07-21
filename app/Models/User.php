@@ -42,6 +42,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'password_changed_at',
         'tenant_id',
     ];
 
@@ -65,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_changed_at' => 'datetime',
             'is_system' => 'boolean',
         ];
     }
