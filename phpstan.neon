@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    paths:
+        - app/
+
+    # Level 6 repo-wide; App\Domain (money-critical) is held to max via
+    # a stricter sweep once the ledger lands (docs/specs/09 §D).
+    level: 6
+
+    excludePaths:
+        - app/Modules/*

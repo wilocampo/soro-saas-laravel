@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, docs/spec-package]
+  pull_request:
+
+jobs:
+  lint-and-analyse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, bcmath, intl, pdo_sqlite, pdo_mysql
+          coverage: none
+      - name: Install composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Pint (code style)
+        run: vendor/bin/pint --test
+      - name: Larastan (static analysis)
+        run: vendor/bin/phpstan analyse --no-progress
+      - name: Composer audit (informational until the dependency-update pass)
+        run: composer audit
+        continue-on-error: true
+
+  tests-sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, bcmath, intl, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Run test suite (sqlite fast path)
+        run: php artisan test
+
+  tests-mariadb:
+    # The real engine (D22): CHECK constraints, triggers, FOR UPDATE — and,
+    # once Phase 1 lands, the Ledger testsuite + ledger:verify run HERE.
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: testing
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, bcmath, intl, pdo_mysql
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Assert MariaDB version floor (>= 10.5, target 11.8)
+        run: |
+          php -r '$pdo=new PDO("mysql:host=127.0.0.1;port=3306","root","root");$v=$pdo->query("SELECT VERSION()")->fetchColumn();echo $v,PHP_EOL;exit(version_compare($v,"10.5","<")?1:0);'
+      - name: Run test suite on MariaDB
+        env:
+          DB_CONNECTION: mariadb
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: php artisan test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
