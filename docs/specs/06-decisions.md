@@ -2,7 +2,7 @@
 
 ## Resolved decisions (ADR-style)
 
-**D0 — Framework/tenancy/DB (corrected from the original handoff).** Laravel 12 (not 13); DB-per-tenant via `spatie/laravel-multitenancy` (not shared `tenant_id`); MySQL 8. *Why:* these are what the repo actually is; physical isolation removes any need for Postgres RLS. Ledger tables live in the tenant DB with no `tenant_id` columns.
+**D0 — Framework/tenancy/DB (corrected from the original handoff).** Laravel 12 (not 13); DB-per-tenant via `spatie/laravel-multitenancy` (not shared `tenant_id`); ~~MySQL 8~~ → **MariaDB 11.8** (amended — see D22). *Why:* these are what the repo actually is; physical isolation removes any need for Postgres RLS. Ledger tables live in the tenant DB with no `tenant_id` columns.
 
 **D1 — Ledger code lives in `App\Domain\Ledger\`** (plain namespace), not an nwidart module. *Why:* `config/modules.php` points at root `Modules/` while composer merges `app/Modules/*`, and no module exists — a broken tooling state. Revisit modules for later phases (Invoicing, Reports, BIR) only after fixing that mismatch. Tenant migrations go in `database/migrations/tenant/`.
 
@@ -12,7 +12,7 @@
 
 **D4 — Build our own core; packages are reference-only; Akaunting rejected.** *Why:* the differentiator (BIR) touches the core deeply and no package provides it; the strongest candidate (`ekmungai/eloquent-ifrs`, MIT) stores money as floats and uses a shared-DB multi-entity model. `scottlaurent/accounting` (MIT) is a lighter reference. **Akaunting is rejected as a base** — BSL 1.1 forbids offering it "as a commercial accounting service to third parties" (later GPLv3). Resolves original handoff open-question §6.5: do not derive schema/logic from Akaunting.
 
-**D5 — Integrity = CHECK + app `PostingService` + triggers + nightly reconciliation.** *Why:* MySQL has no deferred constraints, so the balance invariant binds to the `draft→posted` flip; the app is the primary enforcer, triggers are the net, `ledger:verify` catches drift/tampering. (See `01` §2.)
+**D5 — Integrity = CHECK + app `PostingService` + triggers + nightly reconciliation.** *Why:* MariaDB/MySQL have no deferred constraints, so the balance invariant binds to the `draft→posted` flip; the app is the primary enforcer, triggers are the net, `ledger:verify` catches drift/tampering. (See `01` §2.)
 
 **D6 — Gapless numbering via `document_sequences` + `FOR UPDATE` inside the posting transaction.** *Why:* AUTO_INCREMENT isn't gapless; BIR requires gapless, sequential, non-reusable numbers; voids retain their number; migration continues the series. (See `01` §3, `03`.)
 
@@ -34,11 +34,13 @@
 
 **D18 — Timezone: Asia/Manila** app-wide (single-market product). `entry_date`, period boundaries, `posting_lock_date` comparisons, and audit partitions are Manila dates — currently `config/app.php` is UTC; fix in Phase 0 or close-day boundaries produce off-by-one-day bugs.
 
-**D19 — Encryption at rest:** MySQL InnoDB tablespace encryption + encrypted backups, NOT Laravel `encrypted` casts on TIN columns (they break `.dat` exporters, joins, per-tenant dumps). APP_KEY rotation + escrow documented. See `10-operations.md` §5.
+**D19 — Encryption at rest:** MariaDB data-at-rest encryption (InnoDB + keyring plugin) + encrypted backups, NOT Laravel `encrypted` casts on TIN columns (they break `.dat` exporters, joins, per-tenant dumps). APP_KEY rotation + escrow documented. See `10-operations.md` §5.
 
 **D20 — `users` live in the tenant DB** (roles are per-tenant); provisioning seeds an initial `owner` **and a `system` user** whose id satisfies `created_by`/`posted_by` for non-interactive postings.
 
 **D21 — Packages/tooling** per `09-implementation-kit.md`: spatie/laravel-pdf(+Browsershot), openspout, league/csv, endroid/qr-code `^6.0`, sentry-laravel; dev: larastan, infection (Ledger-scoped), snapshot-assertions. BIR `.DAT` writers are hand-built with golden-file tests (no package exists — verified). mpdf rejected (GPL vs SINGLE_TENANT distribution).
+
+**D22 — Database engine: MariaDB 11.8** (user, 2026-07-21 — amends the earlier "MySQL 8" choice after environment verification). The dev box runs MariaDB 11.8 as its only DB service (same as the developer's ninetails projects); no MySQL 8 is installed. All spec-01 mechanisms work identically on MariaDB (enforced CHECK constraints since 10.2, `SIGNAL` triggers, `SELECT ... FOR UPDATE`, partitioning with the same unique-key rule). Consequences: Laravel **`mariadb` driver** everywhere (note: `SwitchTenantDatabaseTask`/`TenantController` currently clone the **`mysql`** connection template — switch to `mariadb` in the Phase-0 provisioning rework); version floor **MariaDB ≥ 10.5**; CI service image **`mariadb:11.8`**; VPS installs MariaDB; backups use `mariadb-dump`; encryption at rest via MariaDB data-at-rest encryption (D19).
 
 ## Design corrections captured this session
 - **Audit-log PK must be `(id, occurred_at)`** (partition column in every unique key), else the partitioned-table DDL fails. (`01` §6.)

@@ -264,7 +264,7 @@ A multi-tenant SaaS **double-entry accounting** system for Philippine SMEs. Diff
 
 ## Stack (verified, not aspirational)
 - **Laravel 12**, PHP 8.2+. (No Laravel 13 upgrade — the repo is on `^12.0`.)
-- **MySQL 8** (≥ 8.0.16 required for enforced CHECK constraints). Dev default is SQLite but the tenancy/ledger code assumes MySQL — use MySQL for anything ledger-related.
+- **MariaDB 11.8** (Laravel `mariadb` driver; ≥ 10.5 floor for enforced CHECK constraints — D22; the dev box runs MariaDB 11.8). Dev default is SQLite but anything ledger-related runs on MariaDB.
 - **DB-per-tenant** via `spatie/laravel-multitenancy` (subdomain finder, connection swap). **Ledger tables live in the tenant DB; no `tenant_id` columns.**
 - Frontend: Inertia + Vue 3 + PrimeVue (Sakai). Reuse `resources/js/components/CRUDDataTable|CRUDForm|CRUDField|CRUDModal.vue`.
 - Auth: Breeze. Roles: `spatie/laravel-permission` (teams OFF; roles live per tenant DB).
@@ -273,7 +273,7 @@ A multi-tenant SaaS **double-entry accounting** system for Philippine SMEs. Diff
 ## Commands
 ```bash
 composer test                 # = php artisan config:clear && php artisan test  (PHPUnit)
-php artisan test --testsuite=Ledger       # the strict suite (MySQL 8; suite added in Phase 1)
+php artisan test --testsuite=Ledger       # the strict suite (MariaDB 11.8; suite added in Phase 1)
 php artisan migrate --path=database/migrations/tenant --database=tenant   # tenant-only schema
 php artisan ledger:verify                 # nightly: re-derive balances + walk audit hash chain
 php artisan ledger:rebuild-balances       # rebuild the derived balance cache from journal_lines

@@ -18,7 +18,7 @@ The ledger specs cover correctness; this covers **running it as a service**. Ver
 - **Offboarding** (decision in `06` + ToS): departing tenant gets a **standard export bundle** (full SQL dump + books `.csv/.dat` + PDFs + printable audit log — reuses the Phase-4 exporters); operator retains a frozen, legal-hold-aware archive for a fixed contractual window, then deletes (indefinite silent retention conflicts with DPA minimization). Soft-disable routing → export → checksum acknowledged → `DROP DATABASE`.
 
 ## 3. CI ⛔ (nothing exists; larastan not installed)
-Single `ci.yml`: pint → **larastan** (add to require-dev, baseline, required check) → SQLite fast suite → **`mysql:8.0` service container** for the `Ledger` testsuite + `ledger:verify` on fixtures (assert `>= 8.0.16` in a test; the gapless-concurrency property requires real MySQL connections) → `npm ci && npm run build` (flushes the Inertia v1/v2 dependency conflict) → `composer audit`. Branch protection: Ledger + larastan required on every PR. Phase-0 exit criterion.
+Single `ci.yml`: pint → **larastan** (add to require-dev, baseline, required check) → SQLite fast suite → **`mariadb:11.8` service container** for the `Ledger` testsuite + `ledger:verify` on fixtures (assert MariaDB `>= 10.5` in a test; the gapless-concurrency property requires real MySQL connections) → `npm ci && npm run build` (flushes the Inertia v1/v2 dependency conflict) → `composer audit`. Branch protection: Ledger + larastan required on every PR. Phase-0 exit criterion.
 
 ## 4. Data Privacy Act (RA 10173) ⛔ — applies squarely; entirely organizational-plus-a-little-code
 - **TIN/tax data is Sensitive Personal Information** (RA 10173 Sec. 3(l)) — counterparty TINs, addresses, withholding data at scale.
@@ -28,7 +28,7 @@ Single `ci.yml`: pint → **larastan** (add to require-dev, baseline, required c
 - **Cheap-now code:** privacy-notice page, signup consent copy, a one-page **personal-data inventory** doc (which tables/columns hold PII — counterparties, users, 2307/alphalist artifacts, `audit_log.actor_*`, backups, Telescope), offboarding delete honoring retention-law override (DPA "required by law" resolves the minimization-vs-BIR-retention tension — write the reasoning down for counsel).
 
 ## 5. Security ops
-- **Encryption at rest** (decision in `06`): MySQL InnoDB tablespace encryption (keyring) + encrypted backups — **not** Laravel `encrypted` casts on TIN columns (breaks `.dat` exporters, joins, per-tenant dumps). **APP_KEY custody**: rotation + escrow documented (losing it = losing Cashier/encrypted data).
+- **Encryption at rest** (decision in `06`): MariaDB data-at-rest encryption (InnoDB + keyring plugin) + encrypted backups — **not** Laravel `encrypted` casts on TIN columns (breaks `.dat` exporters, joins, per-tenant dumps). **APP_KEY custody**: rotation + escrow documented (losing it = losing Cashier/encrypted data).
 - **Secrets:** `.env` perms, deploy-time templating (sops/age), distinct per-env DB credentials, app-vs-migration user split.
 - **TLS for subdomain tenancy:** wildcard cert needs **DNS-01 ACME automation**; HSTS; cookie domain scoping across tenant subdomains.
 - **Login hardening:** rate-limit auth routes; **2FA decision** (at least for `owner`/`accountant` — table stakes for a system-of-record); the 30-day password rotation (04) needs a scheduled enforcement job + expiry notices — a real Phase-1 ticket.
@@ -36,7 +36,7 @@ Single `ci.yml`: pint → **larastan** (add to require-dev, baseline, required c
 - **Session store:** sessions/cache/jobs tables live on the **landlord** connection (write it down — 04's single-active-session needs one authoritative store across subdomains).
 
 ## 6. Availability / system-of-record commitments (put numbers in the handoff)
-- **RPO ≤ 15 min / RTO ≤ 4 h** (single tenant; ≤ 24 h fleet) via nightly per-tenant dumps **+ MySQL binlog retention ≥ 7 days** for point-in-time recovery. Honest and achievable on a VPS.
+- **RPO ≤ 15 min / RTO ≤ 4 h** (single tenant; ≤ 24 h fleet) via nightly per-tenant dumps **+ MariaDB binlog retention ≥ 7 days** for point-in-time recovery. Honest and achievable on a VPS.
 - **Maintenance windows:** Sundays 00:00–04:00 **Asia/Manila**, with **freeze windows around BIR filing peaks** (the 10th, the 25th after quarter-end, end-of-month after quarter, January alphalist season). An accounting SaaS down on a filing deadline loses customers.
 - **`ledger:verify` / `inventory:verify` as alarms:** scheduled via cron → `tenants:artisan` loop; a hash-chain break or tie-out drift is a **sev-1 page**, not a log line. Wire spatie backup-failure notifications to email/Slack.
 - **Queue tenancy** ⛔: jobs (posting, PDFs, backups, verify) must be **tenant-aware** (spatie `queues_are_tenant_aware_by_default` is already true — keep it, and add a test); jobs table on landlord. A posting job hitting the wrong tenant DB is the nightmare scenario — Phase-0 exit criterion with a test.

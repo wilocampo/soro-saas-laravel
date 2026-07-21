@@ -1,6 +1,6 @@
-# 01 — Ledger Core: Data Model & Integrity Enforcement (MySQL 8, tenant DB)
+# 01 — Ledger Core: Data Model & Integrity Enforcement (MariaDB 11.8, tenant DB)
 
-Scope: the double-entry ledger core. All tables here are **tenant migrations** (`database/migrations/tenant/`, run on the `tenant` connection) → each tenant DB gets its own copy, so there are **no `tenant_id` columns**. Engine `InnoDB`, `utf8mb4_unicode_ci`. Requires **MySQL ≥ 8.0.16** (enforced CHECK constraints). Triggers via `DB::unprepared(...)` in `up()`, `DROP TRIGGER IF EXISTS` in `down()`.
+Scope: the double-entry ledger core. All tables here are **tenant migrations** (`database/migrations/tenant/`, run on the `tenant` connection) → each tenant DB gets its own copy, so there are **no `tenant_id` columns**. Engine `InnoDB`, `utf8mb4_unicode_ci`. Requires **MariaDB ≥ 10.5** (enforced CHECK constraints; standardized on **MariaDB 11.8**, Laravel `mariadb` driver — D22). Triggers via `DB::unprepared(...)` in `up()`, `DROP TRIGGER IF EXISTS` in `down()`.
 
 Companion specs: posting logic in [`02-posting-engine.md`](02-posting-engine.md); BIR field/format rules in [`03-bir-accreditation.md`](03-bir-accreditation.md).
 
@@ -194,7 +194,7 @@ Defined in §6. **Note the composite PK required for partitioning.**
 
 ## 2. Balance-invariant enforcement (belt-and-suspenders)
 
-MySQL has **no deferred/DEFERRABLE constraints**, so `Σdebits=Σcredits` cannot be validated incrementally as lines insert. The check is bound to one atomic event: the header's **`draft → posted` flip**.
+MariaDB (like MySQL) has **no deferred/DEFERRABLE constraints**, so `Σdebits=Σcredits` cannot be validated incrementally as lines insert. The check is bound to one atomic event: the header's **`draft → posted` flip**.
 
 ### 2.1 The posting transaction (app — primary enforcer)
 `App\Domain\Ledger\PostingService::post()` (full contract in `02`):
@@ -279,7 +279,7 @@ PARTITION BY RANGE (YEAR(occurred_at)) (
   PARTITION pmax  VALUES LESS THAN MAXVALUE
 );
 ```
-> **Design correction applied:** the PK is `(id, occurred_at)`, not `id` alone — MySQL requires every partitioning column to be part of every unique key, so `PRIMARY KEY(id)` + `PARTITION BY YEAR(occurred_at)` would fail to create.
+> **Design correction applied:** the PK is `(id, occurred_at)`, not `id` alone — MariaDB/MySQL require every partitioning column to be part of every unique key, so `PRIMARY KEY(id)` + `PARTITION BY YEAR(occurred_at)` would fail to create.
 
 **Append-only, two layers:** (1) `BEFORE UPDATE`/`BEFORE DELETE` triggers that `SIGNAL SQLSTATE '45000'` ("audit_log is append-only"); (2) the application DB user is granted only `INSERT, SELECT` on `audit_log`. **Tamper evidence:** `row_hash` chains to the previous row; `ledger:verify` walks the chain and flags breaks. **No silent deletes anywhere:** corrections are reversals, accounts are deactivated not dropped, every state change writes an `audit_log` row in the same transaction. **Retention:** ≥ 5 years statutory (RR 7-2024) — but older issuances say 10 (see `03` open items); engineer conservatively (10 yr) with a **legal-hold flag** suspending purge during any protest/refund/case. Backups via `spatie/laravel-backup` (installed); keep a PH-resident readable copy.
 
@@ -359,7 +359,7 @@ CREATE TABLE account_roles (                  -- CoA role map backing 02's Accou
 **System actor (closes audit S9):** `users` live in the **tenant DB** (roles are per-tenant; see `06`). Provisioning seeds a `system` user; non-interactive postings (year-end close jobs, imports, recurring) use its id for `created_by`/`posted_by`, with `audit_log.actor_name='system'`.
 
 ## Open decisions (see `06-decisions.md`)
-- MySQL ≥ 8.0.16 confirmed in every environment.
+- MariaDB ≥ 10.5 confirmed in every environment (dev box: 11.8 ✔ — verified 2026-07-21).
 - One-entry-per-document sufficient for v1, or add `document_postings`.
 - Monthly close default: soft (`closed`) vs hard (`locked`).
 - Retention target 5 vs 10 yr (CPA).
