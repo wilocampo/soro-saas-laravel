@@ -51,6 +51,9 @@ class PaymentPostingRule implements PostingRule
             ? $this->recognitionLines($payment, $context, $party, $isReceipt)
             : $this->controlAccountLines($payment, $context, $party, $isReceipt));
 
+        // Whatever the cash did not settle is an advance, in either basis.
+        $lines = array_merge($lines, $this->depositLines($payment, $context, $party, $isReceipt));
+
         return new JournalDraft(
             journalBook: $isReceipt ? 'cash_receipts' : 'cash_disbursements',
             entryDate: $entryDate,
@@ -126,13 +129,50 @@ class PaymentPostingRule implements PostingRule
      */
     private function controlAccountLines(Payment $payment, PostingContext $context, PartyRef $party, bool $isReceipt): array
     {
-        $settled = $payment->settledCentavos();
+        // Only the APPLIED portion clears the control account. Crediting the
+        // whole receipt would drive A/R negative for the customer, hiding an
+        // advance inside the receivable balance.
+        $applied = $payment->settledCentavos() - $payment->unappliedCentavos();
+
+        if ($applied === 0) {
+            return [];
+        }
 
         return [new JournalLineDraft(
             accountId: $context->accounts->id($isReceipt ? 'ar' : 'ap'),
-            debitCentavos: $isReceipt ? 0 : $settled,
-            creditCentavos: $isReceipt ? $settled : 0,
+            debitCentavos: $isReceipt ? 0 : $applied,
+            creditCentavos: $isReceipt ? $applied : 0,
             memo: $isReceipt ? 'Applied to receivable' : 'Applied to payable',
+            party: $party,
+        )];
+    }
+
+    /**
+     * Unapplied cash is not income — it is money held against future
+     * performance: a LIABILITY when a customer pays us in advance, an ASSET
+     * when we advance a supplier. Recognition waits for the document.
+     *
+     * @return list<JournalLineDraft>
+     */
+    private function depositLines(Payment $payment, PostingContext $context, PartyRef $party, bool $isReceipt): array
+    {
+        $unapplied = $payment->unappliedCentavos();
+
+        if ($unapplied === 0) {
+            return [];
+        }
+
+        if ($unapplied < 0) {
+            throw new InvalidDraft(
+                "Payment allocations exceed the payment by {$unapplied} centavos — a document cannot be over-applied."
+            );
+        }
+
+        return [new JournalLineDraft(
+            accountId: $context->accounts->id($isReceipt ? 'customer_deposit' : 'vendor_advance'),
+            debitCentavos: $isReceipt ? 0 : $unapplied,
+            creditCentavos: $isReceipt ? $unapplied : 0,
+            memo: $isReceipt ? 'Customer deposit (unapplied)' : 'Advance to supplier (unapplied)',
             party: $party,
         )];
     }
@@ -146,16 +186,8 @@ class PaymentPostingRule implements PostingRule
      */
     private function recognitionLines(Payment $payment, PostingContext $context, PartyRef $party, bool $isReceipt): array
     {
-        $unapplied = $payment->unappliedCentavos();
-        if ($unapplied !== 0) {
-            // Advances/deposits need their own liability (or asset) role —
-            // tracked as a Phase-2 continuation item in the HANDOFF.
-            throw new InvalidDraft(
-                'Cash-basis payments must be fully applied to documents; '
-                ."{$unapplied} centavos are unapplied (advances need a deposit account)."
-            );
-        }
-
+        // Unapplied cash is handled by depositLines(); here we only expand
+        // what the payment actually settled.
         $lines = [];
 
         foreach ($payment->allocations as $allocation) {

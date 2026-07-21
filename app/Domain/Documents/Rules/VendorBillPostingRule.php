@@ -50,14 +50,24 @@ class VendorBillPostingRule implements PostingRule
         $party = new PartyRef('vendor', (int) $bill->partner_id);
         $lines = [];
 
-        foreach ($bill->lines as $line) {
-            if ((int) $line->net_centavos === 0) {
-                continue;
-            }
+        $costed = $bill->lines->filter(fn ($line) => (int) $line->net_centavos > 0)->values();
 
+        // A NON-VAT registrant cannot CLAIM input tax — the VAT a VAT-
+        // registered supplier charges it is part of the cost of the purchase
+        // (spec 03 §5). Spread it back over the lines by largest remainder so
+        // the pieces sum to the VAT exactly.
+        $foldVatIntoCost = ! $context->isVatRegistered && (int) $bill->input_vat_centavos > 0;
+        $vatShare = $foldVatIntoCost && $costed->isNotEmpty()
+            ? $context->rounding->allocate(
+                (int) $bill->input_vat_centavos,
+                $costed->map(fn ($line) => (int) $line->net_centavos)->all(),
+            )
+            : [];
+
+        foreach ($costed as $index => $line) {
             $lines[] = new JournalLineDraft(
                 accountId: (int) $line->account_id,
-                debitCentavos: (int) $line->net_centavos,
+                debitCentavos: (int) $line->net_centavos + ($vatShare[$index] ?? 0),
                 memo: $line->description,
                 taxCodeId: $line->tax_code_id === null ? null : (int) $line->tax_code_id,
                 taxBaseCentavos: (int) $line->net_centavos,
@@ -66,7 +76,7 @@ class VendorBillPostingRule implements PostingRule
             );
         }
 
-        if ($bill->input_vat_centavos > 0) {
+        if ($bill->input_vat_centavos > 0 && ! $foldVatIntoCost) {
             $lines[] = new JournalLineDraft(
                 accountId: $context->accounts->id('input_vat'),
                 debitCentavos: $bill->input_vat_centavos,

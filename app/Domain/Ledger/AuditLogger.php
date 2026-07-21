@@ -2,6 +2,7 @@
 
 namespace App\Domain\Ledger;
 
+use App\Domain\Ledger\Exceptions\InvalidDraft;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +28,12 @@ class AuditLogger
         ?int $actorId = null,
         ?string $actorName = null,
     ): void {
+        // BIR requires a user against every logged action (RMC 5-2021 Annex B
+        // item 8), so an unnamed caller resolves to the current user or the
+        // seeded system actor rather than writing a null.
+        $actorId ??= $this->resolveActorId();
+        $actorName ??= $this->actorName($actorId);
+
         // Serialize chain writers: the last row's hash is this row's prev.
         $prev = DB::table('audit_log')->orderByDesc('id')->lockForUpdate()->value('row_hash');
 
@@ -60,6 +67,26 @@ class AuditLogger
             'prev_hash' => $prev,
             'row_hash' => self::hash($prev, $payload),
         ]);
+    }
+
+    private function resolveActorId(): int
+    {
+        $id = auth()->id();
+        if ($id !== null) {
+            return (int) $id;
+        }
+
+        $system = DB::table('users')->where('is_system', true)->value('id');
+        if ($system === null) {
+            throw new InvalidDraft('No authenticated user and no system actor is seeded.');
+        }
+
+        return (int) $system;
+    }
+
+    private function actorName(int $actorId): string
+    {
+        return (string) (DB::table('users')->where('id', $actorId)->value('name') ?? 'system');
     }
 
     /**

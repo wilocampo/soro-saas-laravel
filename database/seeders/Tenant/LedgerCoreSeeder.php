@@ -43,6 +43,7 @@ class LedgerCoreSeeder extends Seeder
             ['1100', 'Accounts Receivable', 'asset', 'debit', false, false],
             ['1150', 'Creditable Withholding Tax', 'asset', 'debit', false, false], // 2307 asset
             ['1200', 'Input VAT', 'asset', 'debit', false, false],
+            ['1300', 'Advances to Suppliers', 'asset', 'debit', false, false],
             ['1500', 'Equipment', 'asset', 'debit', false, false],
             // Contra-asset: type is asset but the normal balance is flipped
             // (01 §1.2) — the balance cache signs from normal_balance.
@@ -50,11 +51,17 @@ class LedgerCoreSeeder extends Seeder
             ['2000', 'Accounts Payable', 'liability', 'credit', false, false],
             ['2100', 'Output VAT', 'liability', 'credit', false, false],
             ['2150', 'Withholding Tax Payable', 'liability', 'credit', false, false], // 1601EQ
+            // Cash held against future performance — never income until the
+            // document it settles exists (02 §4.2).
+            ['2200', 'Customer Deposits', 'liability', 'credit', false, false],
             ['3000', "Owner's Capital", 'equity', 'credit', false, false],
             ['3100', 'Opening Balance Equity', 'equity', 'credit', false, true],
             ['3200', 'Retained Earnings', 'equity', 'credit', false, true],
             ['3300', 'Income Summary', 'equity', 'credit', false, true],
             ['4000', 'Sales Revenue', 'income', 'credit', false, false],
+            // Contra-revenue: credit notes land here so GROSS sales stay
+            // intact in the books, which is what the BIR columns report.
+            ['4100', 'Sales Returns and Allowances', 'income', 'debit', true, false],
             ['4900', 'Other Income', 'income', 'credit', false, false],
             ['5000', 'Operating Expense', 'expense', 'debit', false, false],
             ['5100', 'Depreciation Expense', 'expense', 'debit', false, false],
@@ -85,6 +92,9 @@ class LedgerCoreSeeder extends Seeder
             'input_vat' => '1200',
             'cwt_asset' => '1150',
             'wht_payable' => '2150',
+            'sales_returns' => '4100',
+            'customer_deposit' => '2200',
+            'vendor_advance' => '1300',
             'rounding' => '5900',
         ])->map(fn ($code, $role) => ['role' => $role, 'account_id' => $accountId[$code]])->values()->all());
 
@@ -136,6 +146,17 @@ class LedgerCoreSeeder extends Seeder
             'pad_width' => 6,
             'last_value' => 0,
         ], ['GJ', 'SJ', 'PJ', 'CRJ', 'CDJ', 'OB', 'YEC', 'REV']));
+
+        // Customer-facing serials are a CONTINUOUS series: they never reset
+        // at year end and carry on across a system migration (RMC 77-2024),
+        // so the prefix must not embed a year.
+        DB::table('serial_sequences')->insert(array_map(fn (string $series) => [
+            'series' => $series,
+            'branch_id' => $branchId,
+            'prefix' => "{$series}-",
+            'pad_width' => 6,
+            'last_value' => 0,
+        ], ['INV', 'CM', 'DM', 'RC', 'CV', 'BILL']));
 
         // --- tax codes (data, never hard-coded rates — 01 §7) ------------
         DB::table('tax_codes')->insert([

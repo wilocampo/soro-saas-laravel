@@ -40,6 +40,7 @@ abstract class LedgerTestCase extends TestCase
         }
 
         if (! $this->inMemorySqlite()) {
+            $this->resetSmallCounters();
             DB::beginTransaction();
             $this->usesTransaction = true;
         }
@@ -54,6 +55,24 @@ abstract class LedgerTestCase extends TestCase
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * MariaDB does not roll back AUTO_INCREMENT, so re-seeding the reference
+     * tables once per test walks their counters up forever — and these tables
+     * are deliberately narrow (`account_types` is a TINYINT: five rows for
+     * the life of a tenant). Left alone the suite dies of "out of range" the
+     * moment it passes 255 tests. The rollback already emptied them, so
+     * rewinding the counters here is safe and keeps ids stable across runs.
+     */
+    protected function resetSmallCounters(): void
+    {
+        foreach ([
+            'account_types', 'accounts', 'fiscal_years', 'fiscal_periods',
+            'branches', 'document_sequences', 'serial_sequences', 'tax_codes',
+        ] as $table) {
+            DB::statement("ALTER TABLE `{$table}` AUTO_INCREMENT = 1");
+        }
     }
 
     protected function inMemorySqlite(): bool

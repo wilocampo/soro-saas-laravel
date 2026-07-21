@@ -46,6 +46,8 @@ class SalesInvoicePostingRule implements PostingRule
             );
         }
 
+        $context->assertMayShiftVat((int) $invoice->vat_centavos, "Invoice {$invoice->invoice_number}");
+
         $party = new PartyRef('customer', (int) $invoice->partner_id);
         $lines = [];
 
