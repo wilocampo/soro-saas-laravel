@@ -4,12 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Multitenancy\Concerns\UsesMultitenancyConfig;
 use Spatie\Multitenancy\Contracts\IsTenant;
-use Spatie\Multitenancy\TenantCollection;
+use Spatie\Multitenancy\Models\Concerns\ImplementsTenant;
 
+/**
+ * Tenancy context methods (makeCurrent/forget/execute/…) come from spatie's
+ * ImplementsTenant trait — makeCurrent() MUST route through
+ * MakeTenantCurrentAction so the switch_tenant_tasks (database swap) run.
+ * A hand-rolled makeCurrent() that only binds the container skips the DB
+ * switch and sends tenant-aware queue jobs to the landlord database.
+ */
 class Tenant extends Model implements IsTenant
 {
     use HasFactory;
+    use ImplementsTenant;
+    use UsesMultitenancyConfig;
 
     protected $fillable = [
         'name',
@@ -59,108 +69,5 @@ class Tenant extends Model implements IsTenant
     public function setSettings(array $settings): void
     {
         $this->update(['settings' => array_merge($this->settings ?? [], $settings)]);
-    }
-
-    /**
-     * Get the value of the tenant's primary key.
-     */
-    public function getKeyValue(): mixed
-    {
-        return $this->getKey();
-    }
-
-    /**
-     * Create a new Eloquent Collection instance.
-     */
-    public function newCollection(array $models = []): TenantCollection
-    {
-        return new TenantCollection($models);
-    }
-
-    /**
-     * Get the current tenant.
-     */
-    public static function current(): ?static
-    {
-        return app('currentTenant');
-    }
-
-    /**
-     * Check if there is a current tenant.
-     */
-    public static function checkCurrent(): bool
-    {
-        return static::current() !== null;
-    }
-
-    /**
-     * Forget the current tenant.
-     */
-    public static function forgetCurrent(): ?static
-    {
-        $current = static::current();
-        app()->forgetInstance('currentTenant');
-
-        return $current;
-    }
-
-    /**
-     * Make this tenant the current one.
-     */
-    public function makeCurrent(): static
-    {
-        app()->instance('currentTenant', $this);
-
-        return $this;
-    }
-
-    /**
-     * Forget this tenant.
-     */
-    public function forget(): static
-    {
-        if ($this->isCurrent()) {
-            static::forgetCurrent();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Check if this tenant is the current one.
-     */
-    public function isCurrent(): bool
-    {
-        return static::current()?->getKey() === $this->getKey();
-    }
-
-    /**
-     * Execute a callable within this tenant's context.
-     */
-    public function execute(callable $callable): mixed
-    {
-        $original = static::current();
-
-        $this->makeCurrent();
-
-        try {
-            return $callable();
-        } finally {
-            if ($original) {
-                $original->makeCurrent();
-            } else {
-                static::forgetCurrent();
-            }
-        }
-    }
-
-    /**
-     * Create a callback that will execute within this tenant's context.
-     */
-    public function callback(callable $callable): \Closure
-    {
-        return function (...$args) use ($callable) {
-            return $this->execute(fn () => $callable(...$args));
-        };
     }
 }

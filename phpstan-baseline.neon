@@ -103,12 +103,6 @@ parameters:
 			path: app/Models/Tenant.php
 
 		-
-			message: '#^Return type \(Spatie\\Multitenancy\\TenantCollection\) of method App\\Models\\Tenant\:\:newCollection\(\) should be compatible with return type \(Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), static\(Illuminate\\Database\\Eloquent\\Model\)\>\) of method Illuminate\\Database\\Eloquent\\Model\:\:newCollection\(\)$#'
-			identifier: method.childReturnType
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
 			message: '#^Method App\\Models\\User\:\:tenant\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1

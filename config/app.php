@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | Stamped on backup-catalog labels and, later, the mandatory BIR report
+    | header/footer (RMC 5-2021 Annex B item 4: software name + version).
+    |
+    */
+
+    'version' => env('APP_VERSION', '0.1.0-dev'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Single-Tenant Mode (HANDOFF §1)
     |--------------------------------------------------------------------------
     | true  => per-client VPS install: public registration disabled; the
