@@ -1,7 +1,7 @@
 <template>
     <div :class="columnClass">
-        <div class="field">
-            <label :for="fieldId" class="font-medium text-900">
+        <div class="flex flex-col gap-2">
+            <label :for="fieldId" class="font-medium text-surface-900 dark:text-surface-0">
                 {{ label }}
                 <span v-if="required" class="text-red-500">*</span>
             </label>
@@ -11,7 +11,8 @@
                 :modelValue="modelValue"
                 @update:modelValue="$emit('update:modelValue', $event)"
                 :placeholder="placeholder"
-                :class="fieldClass"
+                class="w-full"
+                :invalid="!!error"
                 :type="type"
                 :options="options"
                 :optionLabel="optionLabel"
@@ -21,20 +22,25 @@
                 :toggleMask="toggleMask"
                 v-bind="$attrs"
             />
-            <small v-if="error" class="p-error">{{ error }}</small>
-            <small v-if="helpText" class="text-600 text-sm">{{ helpText }}</small>
+            <small v-if="error" class="text-red-500">{{ error }}</small>
+            <small v-if="helpText" class="text-muted-color text-sm">{{ helpText }}</small>
         </div>
     </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import Checkbox from 'primevue/checkbox';
+import DatePicker from 'primevue/datepicker';
+import InputMask from 'primevue/inputmask';
+import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
-import Password from 'primevue/password';
 import MultiSelect from 'primevue/multiselect';
-import Dropdown from 'primevue/dropdown';
+import Password from 'primevue/password';
+import RadioButton from 'primevue/radiobutton';
+import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
-import Calendar from 'primevue/calendar';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const props = defineProps({
     modelValue: {
@@ -72,9 +78,10 @@ const props = defineProps({
         type: String,
         default: ''
     },
+    // 12-col span (Tailwind grid; parent renders `grid grid-cols-12`)
     columnClass: {
         type: String,
-        default: 'col-12 md:col-6'
+        default: 'col-span-12 md:col-span-6'
     },
     options: {
         type: Array,
@@ -104,19 +111,22 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const fieldClass = computed(() => {
-    const baseClass = 'w-full';
-    const errorClass = props.error ? 'p-invalid' : '';
-    return `${baseClass} ${errorClass}`.trim();
-});
-
+// PrimeVue 4 names only (spec 11 §2 rule 1). The v3 keys stay as aliases so
+// existing pages keep working until their conversion ticket lands.
 const components = {
     InputText,
     Password,
     MultiSelect,
-    Dropdown,
+    Select,
+    Dropdown: Select,
     Textarea,
-    Calendar
+    DatePicker,
+    Calendar: DatePicker,
+    InputNumber,
+    InputMask,
+    ToggleSwitch,
+    RadioButton,
+    Checkbox
 };
 
 const component = computed(() => {

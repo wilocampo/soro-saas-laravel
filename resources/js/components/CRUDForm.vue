@@ -1,11 +1,11 @@
 <template>
     <div class="card">
         <!-- Header -->
-        <div class="flex flex-column sm:flex-row sm:align-items-center sm:justify-between mb-6 gap-3">
-            <div class="flex align-items-center">
-                <h1 class="text-3xl font-bold text-900 m-0">{{ title }}</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+            <div class="flex items-center">
+                <h1 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">{{ title }}</h1>
             </div>
-            <div class="flex align-items-center gap-2">
+            <div class="flex items-center gap-2">
                 <Button
                     type="button"
                     :label="backLabel"
@@ -17,31 +17,32 @@
         </div>
 
         <!-- Form -->
-        <form @submit.prevent="$emit('submit')" class="p-fluid">
-            <div class="grid">
-                <div class="col-12">
-                    <div class="grid">
-                        <slot name="fields"></slot>
-                    </div>
-                </div>
+        <form @submit.prevent="$emit('submit')">
+            <div class="grid grid-cols-12 gap-4">
+                <slot name="fields"></slot>
             </div>
 
             <!-- Actions -->
-            <div class="flex justify-content-end gap-2 mt-4">
-                <Button
-                    type="button"
-                    label="Cancel"
-                    severity="secondary"
-                    @click="$emit('cancel')"
-                    class="p-button-outlined"
-                />
-                <Button
-                    type="submit"
-                    :label="submitLabel"
-                    :icon="submitIcon"
-                    :loading="loading"
-                    :class="submitClass"
-                />
+            <div class="flex items-center justify-between gap-2 mt-6">
+                <div class="flex items-center gap-2">
+                    <slot name="footer-start"></slot>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        label="Cancel"
+                        severity="secondary"
+                        outlined
+                        @click="$emit('cancel')"
+                    />
+                    <Button
+                        type="submit"
+                        :label="submitLabel"
+                        :icon="submitIcon"
+                        :loading="loading"
+                        :severity="submitSeverity"
+                    />
+                </div>
             </div>
         </form>
     </div>
@@ -50,7 +51,7 @@
 <script setup>
 import Button from 'primevue/button';
 
-const props = defineProps({
+defineProps({
     title: {
         type: String,
         required: true
@@ -67,9 +68,9 @@ const props = defineProps({
         type: String,
         default: 'pi pi-check'
     },
-    submitClass: {
+    submitSeverity: {
         type: String,
-        default: 'p-button-success'
+        default: 'primary'
     },
     loading: {
         type: Boolean,
@@ -77,5 +78,5 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['submit', 'cancel']);
+defineEmits(['submit', 'cancel']);
 </script>

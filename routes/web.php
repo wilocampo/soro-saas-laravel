@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TenantController;
+use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -29,16 +32,17 @@ Route::get('/test-users', function () {
 
 // Tenant management routes (landlord only)
 Route::middleware(['auth', 'verified', 'landlord'])->group(function () {
-    Route::resource('tenants', App\Http\Controllers\TenantController::class);
+    Route::resource('tenants', TenantController::class);
     // Users management from landlord perspective
-    Route::resource('users', App\Http\Controllers\UserController::class);
-    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
+    Route::delete('users-bulk', [UserController::class, 'bulkDestroy'])->name('users.bulk-destroy');
+    Route::resource('users', UserController::class);
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 });
 
 // Tenant-specific routes (when accessing from tenant subdomain)
 Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
-    Route::resource('tenant-users', App\Http\Controllers\UserController::class)->names([
+    Route::resource('tenant-users', UserController::class)->names([
         'index' => 'tenant.users.index',
         'create' => 'tenant.users.create',
         'store' => 'tenant.users.store',
@@ -47,8 +51,8 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         'update' => 'tenant.users.update',
         'destroy' => 'tenant.users.destroy',
     ]);
-    Route::get('/tenant-settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('tenant.settings.index');
-    Route::put('/tenant-settings', [App\Http\Controllers\SettingsController::class, 'update'])->name('tenant.settings.update');
+    Route::get('/tenant-settings', [SettingsController::class, 'index'])->name('tenant.settings.index');
+    Route::put('/tenant-settings', [SettingsController::class, 'update'])->name('tenant.settings.update');
 });
 
 Route::middleware('auth')->group(function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -14,7 +15,7 @@ class UserController extends Controller
     public function index(): Response
     {
         $query = User::with(['roles', 'tenant']);
-        
+
         // If we're in a tenant context, filter by tenant
         if (currentTenant()) {
             $query->where('tenant_id', currentTenant()->id);
@@ -23,23 +24,23 @@ class UserController extends Controller
         else {
             // Show all users with their tenants
         }
-        
+
         $users = $query->paginate(10);
         $roles = Role::all();
-        
+
         return Inertia::render('Users/Index', [
             'users' => $users,
             'roles' => $roles,
-            'isLandlord' => !currentTenant()
+            'isLandlord' => ! currentTenant(),
         ]);
     }
 
     public function create(): Response
     {
         $roles = Role::all();
-        
+
         return Inertia::render('Users/Create', [
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -82,9 +83,9 @@ class UserController extends Controller
     public function show(User $user): Response
     {
         $user->load(['roles', 'tenant']);
-        
+
         return Inertia::render('Users/Show', [
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -92,10 +93,10 @@ class UserController extends Controller
     {
         $roles = Role::all();
         $user->load('roles');
-        
+
         return Inertia::render('Users/Edit', [
             'user' => $user,
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -103,7 +104,7 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'roles' => 'array',
             'roles.*' => 'exists:roles,id',
@@ -132,5 +133,24 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:users,id',
+        ]);
+
+        /** @var array<int, int> $requestedIds */
+        $requestedIds = $validated['ids'];
+
+        // Never let a bulk action remove the operator's own account.
+        $ids = collect($requestedIds)->reject(fn ($id) => (int) $id === $request->user()->id);
+
+        User::whereIn('id', $ids)->delete();
+
+        return redirect()->route('users.index')
+            ->with('success', $ids->count().' user(s) deleted.');
     }
 }

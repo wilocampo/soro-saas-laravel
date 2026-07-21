@@ -7,23 +7,30 @@
                     @click="$emit('create')"
                     label="New"
                     icon="pi pi-plus"
-                    class="p-button-success mr-2"
+                    severity="success"
+                    class="mr-2"
                 />
                 <Button
+                    v-if="showSelection"
                     @click="deleteSelected"
                     label="Delete"
                     icon="pi pi-trash"
-                    class="p-button-danger"
-                    :disabled="!selectedItems || selectedItems.length === 0"
+                    severity="danger"
+                    outlined
+                    :disabled="!selection || selection.length === 0"
                 />
+                <slot name="toolbar-actions"></slot>
             </template>
             <template #end>
-                <Button
-                    @click="$emit('export')"
-                    label="Export"
-                    icon="pi pi-upload"
-                    class="p-button-help"
-                />
+                <slot name="toolbar-end">
+                    <Button
+                        @click="$emit('export')"
+                        label="Export"
+                        icon="pi pi-upload"
+                        severity="secondary"
+                        outlined
+                    />
+                </slot>
             </template>
         </Toolbar>
 
@@ -31,7 +38,8 @@
         <DataTable
             ref="dt"
             :value="data"
-            v-model:selection="selectedItems"
+            v-model:selection="selection"
+            v-model:filters="filters"
             :paginator="true"
             :rows="rows"
             :rowsPerPageOptions="rowsPerPageOptions"
@@ -40,8 +48,6 @@
             :globalFilterFields="globalFilterFields"
             :loading="loading"
             class="p-datatable-sm"
-            responsiveLayout="scroll"
-            :globalFilter="globalFilter"
             :dataKey="dataKey"
         >
             <template #header>
@@ -50,27 +56,34 @@
                     <IconField>
                         <InputIcon class="pi pi-search" />
                         <InputText
-                            v-model="globalFilter"
+                            v-model="filters.global.value"
                             placeholder="Search..."
                         />
                     </IconField>
                 </div>
             </template>
 
-            <Column 
-                v-if="showSelection" 
-                selectionMode="multiple" 
-                headerStyle="width: 3rem" 
+            <template #empty>
+                <slot name="empty">
+                    <EmptyState title="No records found" hint="Try adjusting the search, or create a new record." />
+                </slot>
+            </template>
+
+            <Column
+                v-if="showSelection"
+                selectionMode="multiple"
+                headerStyle="width: 3rem"
                 :exportable="false"
             ></Column>
-            
+
             <slot name="columns"></slot>
         </DataTable>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
+import { FilterMatchMode } from '@primevue/core/api';
 import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -78,8 +91,9 @@ import InputText from 'primevue/inputtext';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Toolbar from 'primevue/toolbar';
+import EmptyState from '@/components/EmptyState.vue';
 
-const props = defineProps({
+defineProps({
     data: {
         type: Array,
         required: true
@@ -120,13 +134,23 @@ const props = defineProps({
 
 const emit = defineEmits(['create', 'export', 'delete-selected']);
 
-const globalFilter = ref('');
-const selectedItems = ref([]);
+// Parent may bind v-model:selection; unbound usage keeps local state.
+const selection = defineModel('selection', { default: () => [] });
+
+const filters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+});
+
 const dt = ref();
 
 const deleteSelected = () => {
-    if (selectedItems.value && selectedItems.value.length > 0) {
-        emit('delete-selected', selectedItems.value);
+    if (selection.value && selection.value.length > 0) {
+        emit('delete-selected', selection.value);
     }
 };
+
+// PrimeVue DataTable CSV export (respects :exportable on columns).
+defineExpose({
+    exportCSV: () => dt.value.exportCSV()
+});
 </script>

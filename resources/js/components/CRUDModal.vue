@@ -9,33 +9,29 @@
         :closable="true"
         @hide="onHide"
     >
-        <form @submit.prevent="onSubmit" class="p-fluid">
-            <div class="grid">
-                <div class="col-12">
-                    <div class="grid">
-                        <slot name="fields"></slot>
-                    </div>
-                </div>
+        <form @submit.prevent="onSubmit">
+            <div class="grid grid-cols-12 gap-4">
+                <slot name="fields"></slot>
             </div>
         </form>
 
         <template #footer>
-            <div class="flex justify-content-end gap-2">
+            <div class="flex justify-end gap-2">
                 <Button
                     type="button"
                     label="Cancel"
                     icon="pi pi-times"
                     severity="secondary"
+                    outlined
                     @click="onCancel"
-                    class="p-button-outlined"
                 />
                 <Button
                     type="button"
                     :label="submitLabel"
                     :icon="submitIcon"
                     :loading="loading"
+                    :severity="submitSeverity"
                     @click="onSubmit"
-                    :class="submitButtonClass"
                 />
             </div>
         </template>
@@ -77,9 +73,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'submit', 'cancel', 'hide']);
 
-const submitButtonClass = computed(() => {
-    return props.mode === 'create' ? 'p-button-success' : 'p-button-primary';
-});
+const submitSeverity = computed(() => (props.mode === 'create' ? 'success' : 'primary'));
 
 const onHide = () => {
     emit('update:visible', false);
@@ -95,7 +89,3 @@ const onSubmit = () => {
     emit('submit');
 };
 </script>
-
-<style scoped>
-/* Use PrimeVue's built-in styling */
-</style>

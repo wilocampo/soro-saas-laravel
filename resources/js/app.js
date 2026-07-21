@@ -20,13 +20,10 @@ import 'primeicons/primeicons.css';
 // Sakai styles
 import '@/assets/styles.scss';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Soro SaaS';
 
 createInertiaApp({
-    title: (title) => {
-        // Don't let Inertia manage the title - our composable handles it
-        return title;
-    },
+    title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,
@@ -52,10 +49,7 @@ createInertiaApp({
         
         // Register PrimeVue components globally
         app.component('Breadcrumb', Breadcrumb);
-        
-        // Register custom components globally
-        app.component('CRUDModal', () => import('@/components/CRUDModal.vue'));
-        
+
         return app.mount(el);
     },
     progress: {
