@@ -20,6 +20,9 @@ class Tenant extends Model implements IsTenant
         'settings',
     ];
 
+    // provisioning_status is intentionally NOT fillable — only the
+    // ProvisionTenant saga transitions it (via forceFill).
+
     protected $casts = [
         'is_active' => 'boolean',
         'settings' => 'array',
@@ -39,17 +42,17 @@ class Tenant extends Model implements IsTenant
 
     public function getDatabaseName(): string
     {
-        return $this->database ?? 'tenant_' . $this->id;
+        return $this->database ?? 'tenant_'.$this->id;
     }
 
-    public function getSettings(string $key = null, $default = null)
+    public function getSettings(?string $key = null, $default = null)
     {
         $settings = $this->settings ?? [];
-        
+
         if ($key === null) {
             return $settings;
         }
-        
+
         return data_get($settings, $key, $default);
     }
 
@@ -97,6 +100,7 @@ class Tenant extends Model implements IsTenant
     {
         $current = static::current();
         app()->forgetInstance('currentTenant');
+
         return $current;
     }
 
@@ -106,6 +110,7 @@ class Tenant extends Model implements IsTenant
     public function makeCurrent(): static
     {
         app()->instance('currentTenant', $this);
+
         return $this;
     }
 
@@ -117,6 +122,7 @@ class Tenant extends Model implements IsTenant
         if ($this->isCurrent()) {
             static::forgetCurrent();
         }
+
         return $this;
     }
 
@@ -134,9 +140,9 @@ class Tenant extends Model implements IsTenant
     public function execute(callable $callable): mixed
     {
         $original = static::current();
-        
+
         $this->makeCurrent();
-        
+
         try {
             return $callable();
         } finally {
@@ -154,7 +160,7 @@ class Tenant extends Model implements IsTenant
     public function callback(callable $callable): \Closure
     {
         return function (...$args) use ($callable) {
-            return $this->execute(fn() => $callable(...$args));
+            return $this->execute(fn () => $callable(...$args));
         };
     }
 }

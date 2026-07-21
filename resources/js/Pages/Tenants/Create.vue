@@ -66,6 +66,47 @@
                                     Active (tenant can be accessed)
                                 </label>
                             </div>
+
+                            <!-- Initial owner account (seeded into the tenant database) -->
+                            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Initial owner account</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="admin_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Owner name</label>
+                                        <InputText
+                                            id="admin_name"
+                                            v-model="form.admin_name"
+                                            class="w-full"
+                                            :class="{ 'p-invalid': form.errors.admin_name }"
+                                        />
+                                        <small v-if="form.errors.admin_name" class="text-red-500">{{ form.errors.admin_name }}</small>
+                                    </div>
+                                    <div>
+                                        <label for="admin_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Owner email</label>
+                                        <InputText
+                                            id="admin_email"
+                                            v-model="form.admin_email"
+                                            type="email"
+                                            class="w-full"
+                                            :class="{ 'p-invalid': form.errors.admin_email }"
+                                        />
+                                        <small v-if="form.errors.admin_email" class="text-red-500">{{ form.errors.admin_email }}</small>
+                                    </div>
+                                    <div>
+                                        <label for="admin_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Owner password</label>
+                                        <Password
+                                            id="admin_password"
+                                            v-model="form.admin_password"
+                                            class="w-full"
+                                            inputClass="w-full"
+                                            toggleMask
+                                            :feedback="false"
+                                            :class="{ 'p-invalid': form.errors.admin_password }"
+                                        />
+                                        <small v-if="form.errors.admin_password" class="text-red-500">{{ form.errors.admin_password }}</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -95,6 +136,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Checkbox from 'primevue/checkbox';
+import Password from 'primevue/password';
 import { useForm } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 
@@ -103,6 +145,9 @@ const form = useForm({
     subdomain: '',
     domain: 'soro.local',
     is_active: true,
+    admin_name: '',
+    admin_email: '',
+    admin_password: '',
 });
 
 const submit = () => {
