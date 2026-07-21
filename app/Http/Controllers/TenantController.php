@@ -100,9 +100,12 @@ class TenantController extends Controller
     private function createTenantDatabase(Tenant $tenant): void
     {
         $databaseName = $tenant->getDatabaseName();
-        
-        DB::statement("CREATE DATABASE IF NOT EXISTS `{$databaseName}`");
-        
+
+        // CREATE DATABASE must run on the server connection (mariadb — D22),
+        // never the app default (sqlite in dev has no such statement).
+        DB::connection($this->templateConnection())
+            ->statement("CREATE DATABASE IF NOT EXISTS `{$databaseName}`");
+
         // Run migrations for the tenant database
         $this->runTenantMigrations($tenant);
     }
@@ -110,26 +113,34 @@ class TenantController extends Controller
     private function dropTenantDatabase(Tenant $tenant): void
     {
         $databaseName = $tenant->getDatabaseName();
-        
-        DB::statement("DROP DATABASE IF EXISTS `{$databaseName}`");
+
+        DB::connection($this->templateConnection())
+            ->statement("DROP DATABASE IF EXISTS `{$databaseName}`");
     }
 
     private function runTenantMigrations(Tenant $tenant): void
     {
         $databaseName = $tenant->getDatabaseName();
-        
-        // Set the tenant database connection
+
+        // Set the tenant database connection from the engine template
         config([
             'database.connections.tenant' => array_merge(
-                config('database.connections.mysql'),
+                config('database.connections.'.$this->templateConnection()),
                 ['database' => $databaseName]
             )
         ]);
-        
-        // Run migrations
+
+        // Tenant DBs receive ONLY the tenant migration set (specs/01) —
+        // never the landlord set (tenants/cache/jobs/telescope).
         \Artisan::call('migrate', [
             '--database' => 'tenant',
+            '--path' => 'database/migrations/tenant',
             '--force' => true,
         ]);
+    }
+
+    private function templateConnection(): string
+    {
+        return config('multitenancy.tenant_database_template_connection', 'mariadb');
     }
 }

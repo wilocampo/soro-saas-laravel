@@ -60,6 +60,12 @@ return [
     'tenant_database_connection_name' => 'tenant',
 
     /*
+     * The connection whose config is cloned to build the dynamic `tenant`
+     * connection (and where CREATE/DROP DATABASE run). MariaDB per D22.
+     */
+    'tenant_database_template_connection' => env('TENANT_DB_TEMPLATE_CONNECTION', 'mariadb'),
+
+    /*
      * The connection name to reach the landlord database.
      */
     'landlord_database_connection_name' => null,
