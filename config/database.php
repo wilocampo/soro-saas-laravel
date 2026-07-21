@@ -68,7 +68,10 @@ return [
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
+            // Own key: DB_DATABASE belongs to the sqlite landlord in dev.
+            // This is only the template's default schema — tenant provisioning
+            // overlays the per-tenant database name onto this connection.
+            'database' => env('DB_MARIADB_DATABASE', env('DB_DATABASE', 'laravel')),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
