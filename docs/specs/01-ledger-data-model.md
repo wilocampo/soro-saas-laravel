@@ -49,7 +49,8 @@ CREATE TABLE accounts (
   KEY idx_accounts_active_postable (is_active, is_postable),
   CONSTRAINT fk_accounts_type FOREIGN KEY (account_type_id) REFERENCES account_types(id),
   CONSTRAINT fk_accounts_parent FOREIGN KEY (parent_id) REFERENCES accounts(id),
-  CONSTRAINT chk_accounts_no_self_parent CHECK (parent_id IS NULL OR parent_id <> id)
+  -- (implementation note 2026-07-22: MariaDB rejects CHECKs referencing an
+  --  AUTO_INCREMENT column (err 1901), so no-self-parent is APP-enforced)
 ) ENGINE=InnoDB;
 ```
 Lines may reference only `is_postable=1 AND is_active=1` accounts (line-insert trigger + app). Parent/rollup accounts are `is_postable=0`. No hard delete — `is_active=0`; `is_system=1` accounts can never be deactivated/deleted.

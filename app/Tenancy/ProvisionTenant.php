@@ -4,6 +4,7 @@ namespace App\Tenancy;
 
 use App\Models\Tenant;
 use App\Models\User;
+use Database\Seeders\Tenant\LedgerCoreSeeder;
 use Database\Seeders\Tenant\TenantRolesSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -60,6 +61,7 @@ class ProvisionTenant
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             (new TenantRolesSeeder)->run();
+            (new LedgerCoreSeeder)->run();
 
             $system = new User([
                 'name' => 'System',

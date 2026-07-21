@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Domain\Ledger\DatabasePostingService;
+use App\Domain\Ledger\PostingService;
 use App\Models\Tenant;
 use App\Tenancy\Backup\DatabaseDumper;
 use App\Tenancy\Backup\MariaDbDumper;
@@ -23,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             DatabaseDumper::class,
             MariaDbDumper::class,
+        );
+
+        $this->app->bind(
+            PostingService::class,
+            DatabasePostingService::class,
         );
 
         // Jobs/sessions/cache tables live on the LANDLORD connection

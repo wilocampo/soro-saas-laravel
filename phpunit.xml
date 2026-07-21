@@ -11,6 +11,11 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <!-- The strict ledger gate (docs/specs/05). Runs LAST: on MariaDB it
+             re-migrates the database with the tenant schema. -->
+        <testsuite name="Ledger">
+            <directory>tests/Ledger</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
