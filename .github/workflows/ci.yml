@@ -80,6 +80,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml
+          coverage: none
+      # app.js imports Ziggy's JS from vendor/tightenco/ziggy — the build
+      # needs composer packages present even though it never runs PHP.
+      - run: composer install --no-interaction --prefer-dist --no-progress --no-dev --no-scripts
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

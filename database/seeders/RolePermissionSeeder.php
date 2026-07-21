@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -17,20 +17,20 @@ class RolePermissionSeeder extends Seeder
             'users.create',
             'users.edit',
             'users.delete',
-            
+
             // Tenant management (landlord only)
             'tenants.view',
             'tenants.create',
             'tenants.edit',
             'tenants.delete',
-            
+
             // Settings
             'settings.view',
             'settings.edit',
-            
+
             // Dashboard
             'dashboard.view',
-            
+
             // Notifications
             'notifications.view',
             'notifications.manage',
@@ -48,7 +48,7 @@ class RolePermissionSeeder extends Seeder
 
         // Assign permissions to roles
         $superAdmin->givePermissionTo(Permission::all());
-        
+
         $admin->givePermissionTo([
             'users.view',
             'users.create',
@@ -60,7 +60,7 @@ class RolePermissionSeeder extends Seeder
             'notifications.view',
             'notifications.manage',
         ]);
-        
+
         $manager->givePermissionTo([
             'users.view',
             'users.create',
@@ -69,7 +69,7 @@ class RolePermissionSeeder extends Seeder
             'dashboard.view',
             'notifications.view',
         ]);
-        
+
         $user->givePermissionTo([
             'dashboard.view',
             'notifications.view',

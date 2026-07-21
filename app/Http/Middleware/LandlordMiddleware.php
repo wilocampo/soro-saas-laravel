@@ -13,10 +13,10 @@ class LandlordMiddleware
         // Check if user is accessing from main domain (landlord)
         $host = $request->getHost();
         $mainDomain = config('app.domain', 'localhost');
-        
+
         // For local development, check if it's the main localhost
         if (config('app.env') === 'local') {
-            if (!in_array($host, ['localhost', '127.0.0.1', 'soro.local'])) {
+            if (! in_array($host, ['localhost', '127.0.0.1', 'soro.local'])) {
                 abort(403, 'Access denied. Landlord access required.');
             }
         } else {
@@ -25,7 +25,7 @@ class LandlordMiddleware
                 abort(403, 'Access denied. Landlord access required.');
             }
         }
-        
+
         return $next($request);
     }
 }

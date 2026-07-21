@@ -1,5 +1,7 @@
 <?php
 
+use App\Multitenancy\SubdomainTenantFinder;
+use App\Multitenancy\SwitchTenantDatabaseTask;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Events\CallQueuedListener;
 use Illuminate\Mail\SendQueuedMailable;
@@ -19,7 +21,7 @@ return [
      * This class should extend `Spatie\Multitenancy\TenantFinder\TenantFinder`
      *
      */
-    'tenant_finder' => \App\Multitenancy\SubdomainTenantFinder::class,
+    'tenant_finder' => SubdomainTenantFinder::class,
 
     /*
      * These fields are used by tenant:artisan command to match one or more tenant.
@@ -34,7 +36,7 @@ return [
      * A valid task is any class that implements Spatie\Multitenancy\Tasks\SwitchTenantTask
      */
     'switch_tenant_tasks' => [
-        \App\Multitenancy\SwitchTenantDatabaseTask::class,
+        SwitchTenantDatabaseTask::class,
     ],
 
     /*
@@ -43,7 +45,7 @@ return [
      * It must  extend `Spatie\Multitenancy\Models\Tenant::class` or
      * implement `Spatie\Multitenancy\Contracts\IsTenant::class` interface
      */
-    'tenant_model' => \App\Models\Tenant::class,
+    'tenant_model' => App\Models\Tenant::class,
 
     /*
      * If there is a current tenant when dispatching a job, the id of the current tenant

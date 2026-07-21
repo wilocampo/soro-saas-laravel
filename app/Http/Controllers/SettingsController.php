@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
@@ -13,9 +13,9 @@ class SettingsController extends Controller
     {
         $tenant = currentTenant();
         $settings = $tenant?->getSettings() ?? [];
-        
+
         return Inertia::render('Settings/Index', [
-            'settings' => $settings
+            'settings' => $settings,
         ]);
     }
 
@@ -36,28 +36,28 @@ class SettingsController extends Controller
         ]);
 
         $tenant = currentTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             return redirect()->back()->with('error', 'No tenant found.');
         }
 
         $settings = $tenant->getSettings();
-        
+
         // Handle logo upload
         if ($request->hasFile('app_logo')) {
             $logoPath = $request->file('app_logo')->store('logos', 'public');
             $settings['app_logo'] = $logoPath;
-            
+
             // Delete old logo if exists
             if (isset($settings['app_logo']) && Storage::disk('public')->exists($settings['app_logo'])) {
                 Storage::disk('public')->delete($settings['app_logo']);
             }
         }
-        
+
         // Handle favicon upload
         if ($request->hasFile('app_favicon')) {
             $faviconPath = $request->file('app_favicon')->store('favicons', 'public');
             $settings['app_favicon'] = $faviconPath;
-            
+
             // Delete old favicon if exists
             if (isset($settings['app_favicon']) && Storage::disk('public')->exists($settings['app_favicon'])) {
                 Storage::disk('public')->delete($settings['app_favicon']);

@@ -2,7 +2,7 @@
 
 use App\Models\Tenant;
 
-if (!function_exists('currentTenant')) {
+if (! function_exists('currentTenant')) {
     /**
      * Get the current tenant instance.
      */
@@ -11,7 +11,3 @@ if (!function_exists('currentTenant')) {
         return app('currentTenant');
     }
 }
-
-
-
-
