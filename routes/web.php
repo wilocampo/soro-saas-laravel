@@ -6,6 +6,7 @@ use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
@@ -142,6 +143,12 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::post('/reconciliations/{reconciliation}/toggle', [BankReconciliationController::class, 'toggle'])->name('reconciliations.toggle');
         Route::post('/reconciliations/{reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('reconciliations.complete');
     });
+
+    // Onboarding and the go-live gate (Phase 5). Reading it is never gated:
+    // a tenant must always be able to see what is outstanding.
+    Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::put('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
+    Route::post('/onboarding/go-live', [OnboardingController::class, 'goLive'])->name('onboarding.go-live');
 
     // Billing (Phase 5). Reading the page is never gated — a tenant must be
     // able to see WHY posting stopped, and fix it.

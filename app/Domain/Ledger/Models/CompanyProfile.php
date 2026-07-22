@@ -25,7 +25,15 @@ class CompanyProfile extends Model
         'accn_issued_at' => 'date',
         'twa_effective_date' => 'date',
         'is_twa' => 'boolean',
+        'npc_registered' => 'boolean',
+        'go_live_at' => 'datetime',
     ];
+
+    /** Declared ready to issue real documents (Phase 5 go-live gate). */
+    public function isLive(): bool
+    {
+        return $this->go_live_at !== null;
+    }
 
     public static function current(): self
     {
