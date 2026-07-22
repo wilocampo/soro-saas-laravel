@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Cashier\Billable;
 use Spatie\Multitenancy\Concerns\UsesMultitenancyConfig;
 use Spatie\Multitenancy\Contracts\IsTenant;
 use Spatie\Multitenancy\Models\Concerns\ImplementsTenant;
@@ -14,9 +16,14 @@ use Spatie\Multitenancy\Models\Concerns\ImplementsTenant;
  * MakeTenantCurrentAction so the switch_tenant_tasks (database swap) run.
  * A hand-rolled makeCurrent() that only binds the container skips the DB
  * switch and sends tenant-aware queue jobs to the landlord database.
+ *
+ * The tenant is also the BILLABLE entity (Phase 5): the subscription
+ * belongs to the business, not to whichever person signed up, and it lives
+ * on the landlord connection so no tenant database holds card metadata.
  */
 class Tenant extends Model implements IsTenant
 {
+    use Billable;
     use HasFactory;
     use ImplementsTenant;
     use UsesMultitenancyConfig;
@@ -36,7 +43,56 @@ class Tenant extends Model implements IsTenant
     protected $casts = [
         'is_active' => 'boolean',
         'settings' => 'array',
+        'trial_ends_at' => 'datetime',
     ];
+
+    /**
+     * Whether this tenant may POST new work.
+     *
+     * A lapsed subscription never hides a taxpayer's own books — BIR holds
+     * the REGISTRANT responsible for keeping and producing them, so locking
+     * them out would put them in breach through no act of their own. It
+     * degrades to read-only instead: everything stays visible and
+     * exportable, nothing new can be posted (config/billing.php).
+     */
+    public function canPost(): bool
+    {
+        if (! config('billing.enabled')) {
+            return true;   // SINGLE_TENANT installs bill by contract
+        }
+
+        if ($this->subscribed('default') || $this->onTrial()) {
+            return true;
+        }
+
+        $endedAt = $this->subscription('default')?->ends_at;
+
+        if ($endedAt === null) {
+            return false;   // never subscribed and no trial left
+        }
+
+        // A card that fails at 2am must not stop Monday's invoicing.
+        return CarbonImmutable::parse($endedAt)
+            ->addDays((int) config('billing.grace_days'))
+            ->isFuture();
+    }
+
+    /** Human-readable billing state for the UI and the gate's message. */
+    public function billingStatus(): string
+    {
+        return match (true) {
+            ! config('billing.enabled') => 'not_billed',
+            $this->onTrial() => 'trialing',
+            $this->subscribed('default') => 'active',
+            $this->canPost() => 'grace',
+            default => 'lapsed',
+        };
+    }
+
+    public function stripeName(): ?string
+    {
+        return $this->name;
+    }
 
     public static function findBySubdomain(string $subdomain): ?self
     {

@@ -3,6 +3,7 @@
 use App\Domain\Reports\DashboardSummary;
 use App\Http\Controllers\AgingController;
 use App\Http\Controllers\BankReconciliationController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PartnerController;
@@ -93,35 +94,60 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // Ledger tables live in the tenant DB, so every route here is tenant-
     // scoped by construction. No document is ever destroyed: invoices and
     // bills are CANCELLED (CLAUDE.md #4) and partners are deactivated.
-    Route::resource('partners', PartnerController::class)->only(['index', 'store', 'update', 'destroy']);
-
-    Route::resource('invoices', SalesInvoiceController::class)->only(['index', 'create', 'store', 'show']);
+    //
+    // READ routes are deliberately OUTSIDE the `can-post` gate: a lapsed
+    // subscription must never hide a taxpayer's own books, because BIR holds
+    // the registrant responsible for producing them (Phase 5).
+    Route::get('partners', [PartnerController::class, 'index'])->name('partners.index');
+    Route::resource('invoices', SalesInvoiceController::class)->only(['index', 'create', 'show']);
     Route::get('invoices/{invoice}/pdf', [SalesInvoiceController::class, 'pdf'])->name('invoices.pdf');
-    Route::post('invoices/{invoice}/email', [SalesInvoiceController::class, 'email'])->name('invoices.email');
-    Route::post('invoices/{invoice}/cancel', [SalesInvoiceController::class, 'cancel'])->name('invoices.cancel');
-
-    Route::resource('bills', VendorBillController::class)->only(['index', 'create', 'store', 'show'])
+    Route::resource('bills', VendorBillController::class)->only(['index', 'create', 'show'])
         ->parameters(['bills' => 'bill']);
-    Route::post('bills/{bill}/receipt', [VendorBillController::class, 'attachReceipt'])->name('bills.receipt');
-
-    Route::resource('payments', PaymentController::class)->only(['index', 'create', 'store']);
+    Route::resource('payments', PaymentController::class)->only(['index', 'create']);
     Route::get('payments/open-documents', [PaymentController::class, 'openDocuments'])->name('payments.open-documents');
-
-    // --- inventory (Phase 2b) ------------------------------------------
-    // Items are deactivated, never deleted: posted stock movements
-    // reference them and movements are append-only.
-    Route::resource('items', ItemController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::get('items/barcodes/lookup/{barcode}', [ItemController::class, 'lookupBarcode'])
-        ->name('items.barcode');
-
-    Route::resource('receipts', GoodsReceiptController::class)->only(['index', 'create', 'store', 'show'])
+    Route::resource('items', ItemController::class)->only(['index']);
+    Route::get('items/barcodes/lookup/{barcode}', [ItemController::class, 'lookupBarcode'])->name('items.barcode');
+    Route::resource('receipts', GoodsReceiptController::class)->only(['index', 'create', 'show'])
         ->parameters(['receipts' => 'receipt']);
-
-    Route::resource('counts', StockCountController::class)->only(['index', 'store', 'show'])
+    Route::resource('counts', StockCountController::class)->only(['index', 'show'])
         ->parameters(['counts' => 'count']);
-    Route::post('counts/{count}/record', [StockCountController::class, 'record'])->name('counts.record');
-    Route::post('counts/{count}/review', [StockCountController::class, 'review'])->name('counts.review');
-    Route::post('counts/{count}/approve', [StockCountController::class, 'approve'])->name('counts.approve');
+
+    // WRITE routes: gated on an active subscription.
+    Route::middleware('can-post')->group(function () {
+        Route::post('partners', [PartnerController::class, 'store'])->name('partners.store');
+        Route::put('partners/{partner}', [PartnerController::class, 'update'])->name('partners.update');
+        Route::delete('partners/{partner}', [PartnerController::class, 'destroy'])->name('partners.destroy');
+
+        Route::post('invoices', [SalesInvoiceController::class, 'store'])->name('invoices.store');
+        Route::post('invoices/{invoice}/email', [SalesInvoiceController::class, 'email'])->name('invoices.email');
+        Route::post('invoices/{invoice}/cancel', [SalesInvoiceController::class, 'cancel'])->name('invoices.cancel');
+
+        Route::post('bills', [VendorBillController::class, 'store'])->name('bills.store');
+        Route::post('bills/{bill}/receipt', [VendorBillController::class, 'attachReceipt'])->name('bills.receipt');
+
+        Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+
+        Route::post('items', [ItemController::class, 'store'])->name('items.store');
+        Route::put('items/{item}', [ItemController::class, 'update'])->name('items.update');
+        Route::delete('items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
+
+        Route::post('receipts', [GoodsReceiptController::class, 'store'])->name('receipts.store');
+
+        Route::post('counts', [StockCountController::class, 'store'])->name('counts.store');
+        Route::post('counts/{count}/record', [StockCountController::class, 'record'])->name('counts.record');
+        Route::post('counts/{count}/review', [StockCountController::class, 'review'])->name('counts.review');
+        Route::post('counts/{count}/approve', [StockCountController::class, 'approve'])->name('counts.approve');
+
+        Route::post('/reconciliations', [BankReconciliationController::class, 'store'])->name('reconciliations.store');
+        Route::post('/reconciliations/{reconciliation}/toggle', [BankReconciliationController::class, 'toggle'])->name('reconciliations.toggle');
+        Route::post('/reconciliations/{reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('reconciliations.complete');
+    });
+
+    // Billing (Phase 5). Reading the page is never gated — a tenant must be
+    // able to see WHY posting stopped, and fix it.
+    Route::get('/billing', [BillingController::class, 'show'])->name('billing.show');
+    Route::post('/billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
+    Route::get('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
 
     Route::get('/reports/aging', [AgingController::class, 'index'])->name('reports.aging');
 
@@ -141,10 +167,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // this flow: a difference is an unbooked bank item, and the answer is to
     // post it rather than plug the reconciliation.
     Route::get('/reconciliations', [BankReconciliationController::class, 'index'])->name('reconciliations.index');
-    Route::post('/reconciliations', [BankReconciliationController::class, 'store'])->name('reconciliations.store');
     Route::get('/reconciliations/{reconciliation}', [BankReconciliationController::class, 'show'])->name('reconciliations.show');
-    Route::post('/reconciliations/{reconciliation}/toggle', [BankReconciliationController::class, 'toggle'])->name('reconciliations.toggle');
-    Route::post('/reconciliations/{reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('reconciliations.complete');
 });
 
 Route::middleware('auth')->group(function () {

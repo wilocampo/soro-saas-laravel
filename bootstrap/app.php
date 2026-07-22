@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsurePasswordIsFresh;
+use App\Http\Middleware\EnsureSubscriptionAllowsPosting;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LandlordMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -27,6 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'landlord' => LandlordMiddleware::class,
             'tenant' => TenantMiddleware::class,
+            // Applied to WRITE routes only: a lapsed subscription stops new
+            // postings, never access to the tenant's own books (Phase 5).
+            'can-post' => EnsureSubscriptionAllowsPosting::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
