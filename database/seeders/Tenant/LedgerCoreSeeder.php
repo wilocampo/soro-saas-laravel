@@ -46,6 +46,10 @@ class LedgerCoreSeeder extends Seeder
             ['1200', 'Input VAT', 'asset', 'debit', false, false],
             ['1300', 'Advances to Suppliers', 'asset', 'debit', false, false],
             ['1400', 'Inventory', 'asset', 'debit', false, false],
+            // Cash-basis only: goods have shipped (so Inventory must fall,
+            // or the stock subledger stops tying to the GL) but the EXPENSE
+            // waits for collection. This holds the cost in between (08 §2).
+            ['1450', 'Deferred Cost of Goods Sold', 'asset', 'debit', false, true],
             ['1500', 'Equipment', 'asset', 'debit', false, false],
             // Contra-asset: type is asset but the normal balance is flipped
             // (01 §1.2) — the balance cache signs from normal_balance.
@@ -106,6 +110,7 @@ class LedgerCoreSeeder extends Seeder
             'inventory' => '1400',
             'grni' => '2050',
             'cogs' => '5200',
+            'deferred_cogs' => '1450',
             'inventory_adjustment' => '5300',
             'rounding' => '5900',
         ])->map(fn ($code, $role) => ['role' => $role, 'account_id' => $accountId[$code]])->values()->all());
@@ -168,7 +173,7 @@ class LedgerCoreSeeder extends Seeder
             'prefix' => "{$series}-",
             'pad_width' => 6,
             'last_value' => 0,
-        ], ['INV', 'CM', 'DM', 'RC', 'CV', 'BILL']));
+        ], ['INV', 'CM', 'DM', 'RC', 'CV', 'BILL', 'GR']));
 
         // --- tax codes (data, never hard-coded rates — 01 §7) ------------
         DB::table('tax_codes')->insert([

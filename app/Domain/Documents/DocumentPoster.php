@@ -10,6 +10,9 @@ use App\Domain\Documents\Rules\CreditNotePostingRule;
 use App\Domain\Documents\Rules\PaymentPostingRule;
 use App\Domain\Documents\Rules\SalesInvoicePostingRule;
 use App\Domain\Documents\Rules\VendorBillPostingRule;
+use App\Domain\Inventory\InventoryEffects;
+use App\Domain\Inventory\Models\GoodsReceipt;
+use App\Domain\Inventory\Rules\GoodsReceiptPostingRule;
 use App\Domain\Ledger\Exceptions\InvalidDraft;
 use App\Domain\Ledger\Models\JournalEntry;
 use App\Domain\Ledger\Posting\AccountResolver;
@@ -40,6 +43,7 @@ class DocumentPoster
         VendorBill::class => VendorBillPostingRule::class,
         Payment::class => PaymentPostingRule::class,
         CreditNote::class => CreditNotePostingRule::class,
+        GoodsReceipt::class => GoodsReceiptPostingRule::class,
     ];
 
     /** Document class → [column holding the serial, continuous series code]. */
@@ -48,6 +52,7 @@ class DocumentPoster
         VendorBill::class => ['reference', 'BILL'],
         CreditNote::class => ['note_number', null],   // CM or DM — see serialSeries()
         Payment::class => ['payment_number', null],   // RC or CV
+        GoodsReceipt::class => ['reference', 'GR'],
     ];
 
     public function __construct(
@@ -57,6 +62,7 @@ class DocumentPoster
         private readonly RoundingPolicy $rounding,
         private readonly DocumentSerialService $serials,
         private readonly DocumentBalances $balances,
+        private readonly InventoryEffects $inventory,
     ) {}
 
     public function post(Model $document): ?JournalEntry
@@ -83,6 +89,10 @@ class DocumentPoster
                     ->update(['journal_entry_id' => $entry?->id]);
                 $document->setAttribute('journal_entry_id', $entry?->id);
             }
+
+            // Quantity moves in the SAME transaction as the money, so the
+            // journal and the stock ledger can never disagree (08 §3).
+            $this->inventory->apply($document, $entry);
 
             $this->settle($document);
 

@@ -3,6 +3,7 @@
 namespace App\Domain\Documents\Rules;
 
 use App\Domain\Documents\Models\SalesInvoice;
+use App\Domain\Inventory\CostOfSales;
 use App\Domain\Ledger\Posting\JournalDraft;
 use App\Domain\Ledger\Posting\JournalLineDraft;
 use App\Domain\Ledger\Posting\PartyRef;
@@ -14,10 +15,14 @@ use Carbon\CarbonImmutable;
 /**
  * Sales invoice → journal (docs/specs/02 §4.1, fixtures S2/S3).
  *
- * Accrual: Dr A/R (total) / Cr revenue per line (net) / Cr Output VAT.
- * Cash:    an EMPTY draft — no GL entry exists until collection. The
- *          invoice row and its tax snapshot still feed A/R aging from the
- *          subledger, which is legitimate for a cash-basis registrant.
+ * Accrual: Dr A/R (total) / Cr revenue per line (net) / Cr Output VAT,
+ *          **plus Dr COGS / Cr Inventory** for stocked lines (08 §2).
+ * Cash:    no revenue until collection. For a services invoice that means
+ *          an EMPTY draft — the invoice row and its tax snapshot still feed
+ *          A/R aging from the subledger. For a STOCKED invoice the goods
+ *          have physically gone, so inventory falls now (or the stock
+ *          subledger stops tying to the GL) and the cost parks in Deferred
+ *          COGS until the payment rule recognises it with the revenue.
  */
 class SalesInvoicePostingRule implements PostingRule
 {
@@ -35,14 +40,26 @@ class SalesInvoicePostingRule implements PostingRule
         $source = new SourceRef('sales_invoice', (int) $invoice->id);
         $key = "sales_invoice:{$invoice->id}:post:1";
 
+        // Perpetual COGS (08 §2). Read inside the posting transaction with
+        // the item locked, so the journal and the stock movement cannot
+        // disagree about what the goods cost.
+        $costOfSales = app(CostOfSales::class);
+        $costs = $costOfSales->forInvoiceLines((int) $invoice->id);
+
         if ($context->basis->isCash()) {
+            // Revenue waits for collection — but the GOODS have gone, so
+            // inventory must fall now or the stock subledger stops tying to
+            // the GL. The cost parks in Deferred COGS until the payment rule
+            // recognises it alongside the revenue.
             return new JournalDraft(
                 journalBook: 'sales',
                 entryDate: $entryDate,
-                memo: "Invoice {$invoice->invoice_number} (cash basis — recognized at collection)",
+                memo: $costs === []
+                    ? "Invoice {$invoice->invoice_number} (cash basis — recognized at collection)"
+                    : "Invoice {$invoice->invoice_number} (cash basis — cost deferred, revenue at collection)",
                 source: $source,
                 idempotencyKey: $key,
-                lines: [],
+                lines: $costOfSales->lines($costs, $context, deferred: true),
             );
         }
 
@@ -84,6 +101,10 @@ class SalesInvoicePostingRule implements PostingRule
                 taxBaseCentavos: $invoice->net_centavos,
             );
         }
+
+        // Accrual: the cost is recognised in the SAME entry as the revenue,
+        // which is what "perpetual" means (08 §2).
+        $lines = array_merge($lines, $costOfSales->lines($costs, $context, deferred: false));
 
         return new JournalDraft(
             journalBook: 'sales',
