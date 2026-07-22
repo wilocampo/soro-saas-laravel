@@ -20,5 +20,9 @@ Schedule::command('tenants:backup-restore-test')->monthlyOn(1, '03:00');
 // once alerting is configured. Runs per tenant via tenants:artisan (Phase 2 ops).
 Schedule::command('ledger:verify')->dailyAt('02:30');
 
+// The stock twin (docs/specs/08 §4.4). Runs AFTER ledger:verify so a GL
+// problem is reported before the tie-out that depends on the GL being sound.
+Schedule::command('inventory:verify')->dailyAt('02:45');
+
 // Password-rotation notices (docs/specs/04, 10 §5).
 Schedule::command('users:password-rotation-check')->dailyAt('08:00');

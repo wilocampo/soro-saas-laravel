@@ -45,6 +45,7 @@ class LedgerCoreSeeder extends Seeder
             ['1150', 'Creditable Withholding Tax', 'asset', 'debit', false, false], // 2307 asset
             ['1200', 'Input VAT', 'asset', 'debit', false, false],
             ['1300', 'Advances to Suppliers', 'asset', 'debit', false, false],
+            ['1400', 'Inventory', 'asset', 'debit', false, false],
             ['1500', 'Equipment', 'asset', 'debit', false, false],
             // Contra-asset: type is asset but the normal balance is flipped
             // (01 §1.2) — the balance cache signs from normal_balance.
@@ -52,6 +53,9 @@ class LedgerCoreSeeder extends Seeder
             ['2000', 'Accounts Payable', 'liability', 'credit', false, false],
             ['2100', 'Output VAT', 'liability', 'credit', false, false],
             ['2150', 'Withholding Tax Payable', 'liability', 'credit', false, false], // 1601EQ
+            // Goods received but not yet invoiced: the receipt credits this
+            // and the vendor's bill later clears it to A/P (08 §3, D15).
+            ['2050', 'Goods Received Not Invoiced', 'liability', 'credit', false, true],
             // Cash held against future performance — never income until the
             // document it settles exists (02 §4.2).
             ['2200', 'Customer Deposits', 'liability', 'credit', false, false],
@@ -66,6 +70,9 @@ class LedgerCoreSeeder extends Seeder
             ['4900', 'Other Income', 'income', 'credit', false, false],
             ['5000', 'Operating Expense', 'expense', 'debit', false, false],
             ['5100', 'Depreciation Expense', 'expense', 'debit', false, false],
+            ['5200', 'Cost of Goods Sold', 'expense', 'debit', false, false],
+            // Shrinkage, spoilage, damage — where a count variance lands.
+            ['5300', 'Inventory Shrinkage', 'expense', 'debit', false, false],
             ['5900', 'Rounding Gain/Loss', 'expense', 'debit', false, true],
         ];
         DB::table('accounts')->insert(array_map(fn (array $a, int $i) => [
@@ -96,6 +103,10 @@ class LedgerCoreSeeder extends Seeder
             'sales_returns' => '4100',
             'customer_deposit' => '2200',
             'vendor_advance' => '1300',
+            'inventory' => '1400',
+            'grni' => '2050',
+            'cogs' => '5200',
+            'inventory_adjustment' => '5300',
             'rounding' => '5900',
         ])->map(fn ($code, $role) => ['role' => $role, 'account_id' => $accountId[$code]])->values()->all());
 
@@ -165,6 +176,28 @@ class LedgerCoreSeeder extends Seeder
             ['code' => 'IV12', 'kind' => 'input_vat', 'rate_bp' => 1200, 'account_id' => $accountId['1200'], 'default_atc' => null, 'effective_from' => '2024-01-01', 'effective_to' => null],
         ]);
 
+        // --- inventory reference data (08 §1) -----------------------------
+        // A handful of PH-retail-typical units; the dimension exists from
+        // day one even for a tenant that never touches inventory.
+        DB::table('uoms')->insert(array_map(fn (array $u) => [
+            'name' => $u[0], 'symbol' => $u[1], 'is_active' => true,
+        ], [
+            ['Piece', 'pc'], ['Box', 'box'], ['Case', 'case'], ['Pack', 'pack'],
+            ['Kilogram', 'kg'], ['Gram', 'g'], ['Litre', 'L'], ['Millilitre', 'mL'],
+        ]));
+
+        // v1 ships ONE location; multi-location is supported everywhere in
+        // the schema so adding the second is data, not a migration (08 §1).
+        DB::table('locations')->insert([
+            'code' => 'MAIN',
+            'name' => 'Main Warehouse',
+            'type' => 'warehouse',
+            'is_default' => true,
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
         // --- BIR registration singleton (03 §1) ---------------------------
         // Deliberately a PLACEHOLDER: an unconfigured profile blocks invoice
         // issuance rather than printing a wrong TIN on a legal document.
@@ -190,6 +223,9 @@ class LedgerCoreSeeder extends Seeder
             'retained_earnings_account_id' => $accountId['3200'],
             'income_summary_account_id' => $accountId['3300'],
             'rounding_account_id' => $accountId['5900'],
+            'grni_account_id' => $accountId['2050'],
+            // D17: refuse a sale that would drive stock negative.
+            'negative_stock_policy' => 'block',
             'created_at' => $now,
             'updated_at' => $now,
         ]);
