@@ -4,6 +4,7 @@ namespace App\Domain\Inventory;
 
 use App\Domain\Documents\Models\SalesInvoice;
 use App\Domain\Inventory\Models\GoodsReceipt;
+use App\Domain\Inventory\Models\StockAdjustment;
 use App\Domain\Ledger\Models\JournalEntry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +30,38 @@ class InventoryEffects
         match (true) {
             $document instanceof GoodsReceipt => $this->receive($document, $entry),
             $document instanceof SalesInvoice => $this->ship($document, $entry),
+            $document instanceof StockAdjustment => $this->adjust($document, $entry),
             default => null,
         };
+    }
+
+    /**
+     * An adjustment moves quantity without touching the average: found or
+     * lost stock changes how much there is, not what it cost.
+     */
+    private function adjust(StockAdjustment $adjustment, ?JournalEntry $entry): void
+    {
+        if ($adjustment->getAttribute('status') === 'cancelled') {
+            return;
+        }
+
+        foreach ($adjustment->lines as $line) {
+            $this->stock->record(
+                itemId: (int) $line->item_id,
+                locationId: (int) $adjustment->location_id,
+                // count_adjust carries a signed delta; a plain adjustment is
+                // directional, so pick the type that matches the sign.
+                movementType: $adjustment->reason === 'count'
+                    ? 'count_adjust'
+                    : (bccomp((string) $line->qty_delta, '0', 5) > 0 ? 'adjust_in' : 'adjust_out'),
+                qtyDelta: (string) $line->qty_delta,
+                unitCost: (string) $line->unit_cost,
+                sourceType: 'stock_adjustment',
+                sourceId: (int) $adjustment->id,
+                journalEntryId: $entry?->id,
+                lotId: $line->lot_id === null ? null : (int) $line->lot_id,
+            );
+        }
     }
 
     /** Receipts add stock at their ACTUAL cost, which moves the average. */

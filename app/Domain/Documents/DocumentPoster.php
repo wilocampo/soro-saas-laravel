@@ -12,7 +12,9 @@ use App\Domain\Documents\Rules\SalesInvoicePostingRule;
 use App\Domain\Documents\Rules\VendorBillPostingRule;
 use App\Domain\Inventory\InventoryEffects;
 use App\Domain\Inventory\Models\GoodsReceipt;
+use App\Domain\Inventory\Models\StockAdjustment;
 use App\Domain\Inventory\Rules\GoodsReceiptPostingRule;
+use App\Domain\Inventory\Rules\StockAdjustmentPostingRule;
 use App\Domain\Ledger\Exceptions\InvalidDraft;
 use App\Domain\Ledger\Models\JournalEntry;
 use App\Domain\Ledger\Posting\AccountResolver;
@@ -44,6 +46,7 @@ class DocumentPoster
         Payment::class => PaymentPostingRule::class,
         CreditNote::class => CreditNotePostingRule::class,
         GoodsReceipt::class => GoodsReceiptPostingRule::class,
+        StockAdjustment::class => StockAdjustmentPostingRule::class,
     ];
 
     /** Document class → [column holding the serial, continuous series code]. */
@@ -53,6 +56,7 @@ class DocumentPoster
         CreditNote::class => ['note_number', null],   // CM or DM — see serialSeries()
         Payment::class => ['payment_number', null],   // RC or CV
         GoodsReceipt::class => ['reference', 'GR'],
+        StockAdjustment::class => ['reference', 'ADJ'],
     ];
 
     public function __construct(

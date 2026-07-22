@@ -173,7 +173,7 @@ class LedgerCoreSeeder extends Seeder
             'prefix' => "{$series}-",
             'pad_width' => 6,
             'last_value' => 0,
-        ], ['INV', 'CM', 'DM', 'RC', 'CV', 'BILL', 'GR']));
+        ], ['INV', 'CM', 'DM', 'RC', 'CV', 'BILL', 'GR', 'ADJ', 'CNT', 'TRF']));
 
         // --- tax codes (data, never hard-coded rates — 01 §7) ------------
         DB::table('tax_codes')->insert([
