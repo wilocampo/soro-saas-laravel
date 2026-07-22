@@ -23,6 +23,7 @@ class InventoryEffects
     public function __construct(
         private readonly StockLedger $stock,
         private readonly CostOfSales $costOfSales,
+        private readonly LotLedger $lots,
     ) {}
 
     public function apply(Model $document, ?JournalEntry $entry): void
@@ -72,7 +73,7 @@ class InventoryEffects
         }
 
         foreach ($receipt->lines as $line) {
-            $this->stock->record(
+            $movementId = $this->stock->record(
                 itemId: (int) $line->item_id,
                 locationId: (int) $receipt->location_id,
                 movementType: 'receive',
@@ -82,6 +83,22 @@ class InventoryEffects
                 sourceId: (int) $receipt->id,
                 journalEntryId: $entry?->id,
             );
+
+            // Lot-tracked items also open (or top up) their lot, so FEFO has
+            // something to draw from and a recall has something to trace.
+            if ($line->item->isLotTracked() && $line->lot_code !== null) {
+                $this->lots->receive(
+                    itemId: (int) $line->item_id,
+                    locationId: (int) $receipt->location_id,
+                    lotCode: (string) $line->lot_code,
+                    qty: (string) $line->qty_stock,
+                    costPerBase: (string) $line->unit_cost,
+                    expiryDate: $line->expiry_date?->toDateString(),
+                    sourceType: 'goods_receipt',
+                    sourceId: (int) $receipt->id,
+                    stockMovementId: $movementId,
+                );
+            }
         }
     }
 
@@ -102,7 +119,7 @@ class InventoryEffects
         $costs = $this->costOfSales->forInvoiceLines((int) $invoice->id);
 
         foreach ($costs as $lineId => $cost) {
-            $this->stock->record(
+            $movementId = $this->stock->record(
                 itemId: $cost['item_id'],
                 locationId: $cost['location_id'],
                 movementType: 'sale',
@@ -112,8 +129,26 @@ class InventoryEffects
                 journalEntryId: $entry?->id,
             );
 
+            // FEFO draws the oldest-expiring lots first. Server-side, always:
+            // a client suggestion is a hint, never the record (08 §4.1).
+            if ($this->isLotTracked($cost['item_id'])) {
+                $this->lots->release(
+                    itemId: $cost['item_id'],
+                    locationId: $cost['location_id'],
+                    qty: ltrim($cost['qty'], '-'),
+                    sourceType: 'sales_invoice',
+                    sourceId: (int) $invoice->id,
+                    stockMovementId: $movementId,
+                );
+            }
+
             DB::table('sales_invoice_lines')->where('id', $lineId)
                 ->update(['cogs_centavos' => $cost['cogs_centavos']]);
         }
+    }
+
+    private function isLotTracked(int $itemId): bool
+    {
+        return DB::table('items')->where('id', $itemId)->value('tracking') === 'lot';
     }
 }
