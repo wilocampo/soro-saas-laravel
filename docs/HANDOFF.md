@@ -20,6 +20,7 @@ The decisions below are grounded in a repo inventory and a fact-checked BIR rese
 - [`docs/specs/10-operations.md`](specs/10-operations.md) — per-tenant backups (⛔ current config misses tenant DBs), fleet migrations, CI shape, **Data Privacy Act (RA 10173)** obligations, security ops, RPO/RTO, timezone.
 - [`docs/specs/11-frontend-components.md`](specs/11-frontend-components.md) — **Sakai design system + reusable component library**: audit of non-Sakai pages (Profile/Settings/Tenants/Notifications/auth), the full build list (tables, form fields, money/TIN inputs, confirm/toast patterns, accounting grids), and the conversion backlog.
 - [`docs/fixtures/`](fixtures/) — hand-verifiable posting scenarios (draft for accountant review), incl. month-close + inventory round-trip.
+- [`docs/cpa-briefing.md`](cpa-briefing.md) — **the document to send an accountant.** Every open tax/bookkeeping question from `03`/`06` restated in the accountant's terms, with our drafted treatment, its citation, and what changes in the software depending on the answer. Q1–Q8 (marked **P1**) are what actually block the Phase 4 build.
 
 ## 1. Product decision (read first)
 

@@ -62,6 +62,9 @@
 - The "RR 9-2009 prima-facie line-delete" claim was **wrong**; the append-only rule is grounded in **RMC 5-2021 Annex B item 10**.
 
 ## Accountant / CPA sign-off list (blocking for Phase 4; do not ship on Claude output alone)
+
+> **The list below is packaged for an accountant in [`../cpa-briefing.md`](../cpa-briefing.md)** — each item restated in the accountant's terms with the drafted treatment, its citation, and what changes in the software depending on the answer. Send that document, not this one. Answers come back keyed to its Q-numbers; record them here as they land.
+
 - **Cash-flow activity classification** (D23): the operating/investing/financing tag for every account in the chart, before any Statement of Cash Flows is built.
 - Chart-of-accounts structure + BIR field mappings (`bir_tax_type`, `bir_atc_code`, `bir_fs_line`) and the full ATC/alphalist code set.
 - Document book codes + number formats/starting series vs the BIR-registered CAS/AC series.
