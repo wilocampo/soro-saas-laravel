@@ -4,6 +4,7 @@ use App\Http\Controllers\AgingController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TenantController;
@@ -95,6 +96,17 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('payments/open-documents', [PaymentController::class, 'openDocuments'])->name('payments.open-documents');
 
     Route::get('/reports/aging', [AgingController::class, 'index'])->name('reports.aging');
+
+    // Financial reports (Phase 3). Each renders on screen, or exports to
+    // pdf/xlsx/csv via ?format= from the SAME description — so an export can
+    // never drift from what the operator reviewed on screen.
+    Route::prefix('reports')->name('reports.')->controller(ReportController::class)->group(function () {
+        Route::get('/trial-balance', 'trialBalance')->name('trial-balance');
+        Route::get('/balance-sheet', 'balanceSheet')->name('balance-sheet');
+        Route::get('/income-statement', 'incomeStatement')->name('income-statement');
+        Route::get('/general-ledger', 'generalLedger')->name('general-ledger');
+        Route::get('/journal', 'journal')->name('journal');
+    });
 });
 
 Route::middleware('auth')->group(function () {
