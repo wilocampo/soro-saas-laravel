@@ -1,0 +1,89 @@
+# Single-tenant deployment (docs/specs/10 §7, Phase 5).
+#
+# One client, one VPS, one database — the SINGLE_TENANT mode from Phase 0.
+# Public registration is off, billing is by contract, and the whole stack
+# fits on a small box.
+#
+#   cp deploy/.env.production.example .env    # then edit it
+#   docker compose -f deploy/docker-compose.yml up -d
+#   docker compose -f deploy/docker-compose.yml exec app php artisan app:production-check
+#
+# The production check is not optional: it is what stops a box going live
+# with Telescope on or without a backup.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    env_file: ../.env
+    volumes:
+      # Media (receipt scans) and exports must survive a container rebuild.
+      - storage:/var/www/html/storage/app
+      - ./logs:/var/www/html/storage/logs
+    ports:
+      - '${APP_PORT:-8080}:8080'
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:8080/up']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # The scheduler runs ledger:verify, inventory:verify, the backups and the
+  # password-rotation notices. Without it the nightly integrity checks that
+  # this system's compliance story rests on simply never happen.
+  scheduler:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    env_file: ../.env
+    volumes:
+      - storage:/var/www/html/storage/app
+      - ./logs:/var/www/html/storage/logs
+    command: php artisan schedule:work
+
+  queue:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    env_file: ../.env
+    volumes:
+      - storage:/var/www/html/storage/app
+      - ./logs:/var/www/html/storage/logs
+    command: php artisan queue:work --tries=3 --max-time=3600
+
+  mariadb:
+    # D22: MariaDB 11.8. The floor is 10.5 for enforced CHECK constraints.
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_MARIADB_DATABASE:-soro}
+      MARIADB_USER: ${DB_USERNAME:-soro}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    volumes:
+      - mariadb:/var/lib/mysql
+      # Backups land here so a host-level job can ship them off-box. Spec 10
+      # requires a PH-resident readable copy (RR 9-2009 §6).
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mariadb:
+  storage:
