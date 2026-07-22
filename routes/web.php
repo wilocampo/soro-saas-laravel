@@ -3,12 +3,15 @@
 use App\Domain\Reports\DashboardSummary;
 use App\Http\Controllers\AgingController;
 use App\Http\Controllers\BankReconciliationController;
+use App\Http\Controllers\GoodsReceiptController;
+use App\Http\Controllers\ItemController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesInvoiceController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StockCountController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorBillController;
@@ -103,6 +106,22 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
     Route::resource('payments', PaymentController::class)->only(['index', 'create', 'store']);
     Route::get('payments/open-documents', [PaymentController::class, 'openDocuments'])->name('payments.open-documents');
+
+    // --- inventory (Phase 2b) ------------------------------------------
+    // Items are deactivated, never deleted: posted stock movements
+    // reference them and movements are append-only.
+    Route::resource('items', ItemController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('items/barcodes/lookup/{barcode}', [ItemController::class, 'lookupBarcode'])
+        ->name('items.barcode');
+
+    Route::resource('receipts', GoodsReceiptController::class)->only(['index', 'create', 'store', 'show'])
+        ->parameters(['receipts' => 'receipt']);
+
+    Route::resource('counts', StockCountController::class)->only(['index', 'store', 'show'])
+        ->parameters(['counts' => 'count']);
+    Route::post('counts/{count}/record', [StockCountController::class, 'record'])->name('counts.record');
+    Route::post('counts/{count}/review', [StockCountController::class, 'review'])->name('counts.review');
+    Route::post('counts/{count}/approve', [StockCountController::class, 'approve'])->name('counts.approve');
 
     Route::get('/reports/aging', [AgingController::class, 'index'])->name('reports.aging');
 
