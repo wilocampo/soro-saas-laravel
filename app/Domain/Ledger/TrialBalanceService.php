@@ -14,7 +14,8 @@ class TrialBalanceService
 {
     /**
      * @return array{
-     *   rows: list<array{account_id:int, code:string, name:string, normal_balance:string, debit:int, credit:int, signed:int}>,
+     *   rows: list<array{account_id:int, code:string, name:string, normal_balance:string,
+     *                    type_code:string, statement:string, debit:int, credit:int, signed:int}>,
      *   total_debit:int, total_credit:int, balanced:bool
      * }
      */
@@ -22,8 +23,13 @@ class TrialBalanceService
     {
         $period = DB::table('fiscal_periods')->where('id', $periodId)->firstOrFail();
 
-        $accounts = DB::table('accounts')->orderBy('code')
-            ->get(['id', 'code', 'name', 'normal_balance']);
+        // The type carries the statement each account belongs on, so the
+        // financial statements are a partition of THIS list — which is what
+        // makes them tie to the trial balance by construction (spec 05).
+        $accounts = DB::table('accounts as a')
+            ->join('account_types as t', 't.id', '=', 'a.account_type_id')
+            ->orderBy('a.code')
+            ->get(['a.id', 'a.code', 'a.name', 'a.normal_balance', 't.code as type_code', 't.statement']);
 
         $rows = [];
         $totalDebit = 0;
@@ -55,6 +61,8 @@ class TrialBalanceService
                 'code' => $account->code,
                 'name' => $account->name,
                 'normal_balance' => $account->normal_balance,
+                'type_code' => $account->type_code,
+                'statement' => $account->statement,
                 'debit' => $debit,
                 'credit' => $credit,
                 'signed' => $signed,
@@ -81,33 +89,76 @@ class TrialBalanceService
             return (int) $cached->closing_signed;   // closed → the cache is final
         }
 
-        // Open period: opening + this period's live movement (bounded scan).
         $sign = DB::table('accounts')->where('id', $accountId)->value('normal_balance') === 'debit' ? 1 : -1;
+
+        // `opening_signed` is only authoritative once the PRECEDING period
+        // has been rolled forward, which happens at close. On a row created
+        // incrementally by a posting it is still zero — so trusting it would
+        // silently drop everything posted in earlier periods that are also
+        // still open. Take the last CLOSED period as the base instead, and
+        // scan the open tail after it.
+        [$base, $periodIds] = $this->baseAndOpenTail($accountId, $period);
+
+        if ($periodIds === []) {
+            return $base;
+        }
 
         $movement = DB::table('journal_lines as jl')
             ->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
             ->whereIn('je.status', ['posted', 'void'])
             ->where('jl.account_id', $accountId)
-            ->where('jl.fiscal_period_id', $period->id)
+            ->whereIn('jl.fiscal_period_id', $periodIds)
             ->selectRaw('COALESCE(SUM(jl.debit_centavos),0) AS d, COALESCE(SUM(jl.credit_centavos),0) AS c')
             ->first();
 
-        $opening = $cached === null ? $this->openingFromPriorPeriods($accountId, $period) : (int) $cached->opening_signed;
-
-        return $opening + $sign * ((int) $movement->d - (int) $movement->c);
+        return $base + $sign * ((int) $movement->d - (int) $movement->c);
     }
 
-    /** No cache row yet (nothing posted this period): carry the prior close. */
-    private function openingFromPriorPeriods(int $accountId, object $period): int
+    /**
+     * The closing balance of the newest closed period at or before $period,
+     * plus the ids of every period after it up to and including $period —
+     * i.e. the still-open tail whose movement has to be read live.
+     *
+     * @return array{0:int, 1:list<int>}
+     */
+    private function baseAndOpenTail(int $accountId, object $period): array
     {
-        $prior = DB::table('account_period_balances as apb')
-            ->join('fiscal_periods as fp', 'fp.id', '=', 'apb.fiscal_period_id')
-            ->join('fiscal_years as fy', 'fy.id', '=', 'fp.fiscal_year_id')
-            ->where('apb.account_id', $accountId)
-            ->where('fp.end_date', '<', $period->end_date)
-            ->orderByDesc('fp.end_date')->orderByDesc('fp.period_no')
-            ->value('apb.closing_signed');
+        // Chronological order; period 13 shares period 12's end date, so
+        // period_no breaks the tie the same way it does everywhere else.
+        $periods = DB::table('fiscal_periods')
+            ->orderBy('end_date')->orderBy('period_no')
+            ->get(['id', 'status']);
 
-        return (int) ($prior ?? 0);
+        $upTo = [];
+        foreach ($periods as $candidate) {
+            $upTo[] = $candidate;
+            if ((int) $candidate->id === (int) $period->id) {
+                break;
+            }
+        }
+
+        $cached = DB::table('account_period_balances')
+            ->where('account_id', $accountId)
+            ->pluck('closing_signed', 'fiscal_period_id');
+
+        $base = 0;
+        $tail = [];
+
+        // Walk backwards to the newest closed period that has a cache row:
+        // everything from there forward is read live.
+        for ($index = count($upTo) - 1; $index >= 0; $index--) {
+            $candidate = $upTo[$index];
+
+            if ($candidate->status !== 'open'
+                && (int) $candidate->id !== (int) $period->id
+                && $cached->has($candidate->id)) {
+                $base = (int) $cached->get($candidate->id);
+                break;
+            }
+
+            $tail[] = (int) $candidate->id;
+        }
+
+        return [$base, array_reverse($tail)];
     }
 }

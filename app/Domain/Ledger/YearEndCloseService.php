@@ -25,6 +25,7 @@ class YearEndCloseService
     public function __construct(
         private readonly PostingService $posting,
         private readonly AuditLogger $audit,
+        private readonly BalanceCache $balances,
     ) {}
 
     public function close(int $fiscalYearId, ?int $actorId = null, ?string $actorName = null): ?JournalEntry
@@ -151,6 +152,11 @@ class YearEndCloseService
         DB::table('fiscal_periods')->where('fiscal_year_id', $fiscalYearId)
             ->where('status', 'open')
             ->update(['status' => 'closed', 'closed_at' => now(), 'closed_by' => $actorId]);
+
+        // A closed period is read straight from `closing_signed`, so the
+        // cache MUST be rolled forward before the flip is visible — closing
+        // the year without this made every report read zero.
+        $this->balances->rollForward();
 
         $this->audit->record(
             event: 'fiscal_year.closed',
