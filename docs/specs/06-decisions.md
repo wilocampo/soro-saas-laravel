@@ -42,6 +42,19 @@
 
 **D22 — Database engine: MariaDB 11.8** (user, 2026-07-21 — amends the earlier "MySQL 8" choice after environment verification). The dev box runs MariaDB 11.8 as its only DB service (same as the developer's ninetails projects); no MySQL 8 is installed. All spec-01 mechanisms work identically on MariaDB (enforced CHECK constraints since 10.2, `SIGNAL` triggers, `SELECT ... FOR UPDATE`, partitioning with the same unique-key rule). Consequences: Laravel **`mariadb` driver** everywhere (note: `SwitchTenantDatabaseTask`/`TenantController` currently clone the **`mysql`** connection template — switch to `mariadb` in the Phase-0 provisioning rework); version floor **MariaDB ≥ 10.5**; CI service image **`mariadb:11.8`**; VPS installs MariaDB; backups use `mariadb-dump`; encryption at rest via MariaDB data-at-rest encryption (D19).
 
+**D23 — Statement of Cash Flows: DEFERRED to v2, explicitly** (2026-07-22, Phase 3). Spec `00`/the phase plan allowed "Statement of Cash Flows **or** explicit v2 deferral"; this is the deferral, with reasons, so nobody re-litigates it later.
+
+*Why not now.* A cash flow statement is not another view of the trial balance the way the balance sheet and P&L are — it needs information the ledger does not yet carry:
+
+1. **Activity classification.** Every account must be tagged operating / investing / financing. That mapping is a judgement call per chart of accounts (is a director's loan financing or operating?), and getting it wrong produces a statement that foots correctly and says something false. `accounts.bir_fs_line` exists as a placeholder but is unpopulated and unvalidated.
+2. **The indirect method needs non-cash detail** the ledger does not distinguish today: depreciation is visible (contra-asset movement), but gains/losses on disposal, provisions and FX are not separable from ordinary movement without transaction-level tagging.
+3. **Working-capital movements need opening balances per classified account across a range**, which the balance cache supports, but only once (1) exists.
+4. **It is not a BIR filing requirement for the SME segment.** The 2550Q/1601EQ/1604E/SLSP set (Phase 4) is what actually blocks go-live; PFRS for SMEs requires a cash flow statement in a full annual financial-statement package, which is an accountant's deliverable and is out of scope per D8 (payroll/income-tax returns already excluded).
+
+*What we ship instead in Phase 3.* Cash movement is fully visible and provably correct through the General Ledger on each cash account (with its own opening/closing tie-out), the bank reconciliation, and the dashboard's cash position. Those answer "where did the cash go" without asserting a classification we cannot yet justify.
+
+*Preconditions for v2.* (a) an `activity_class` column on `accounts` (operating/investing/financing) seeded per chart and **CPA-reviewed** — added to the sign-off list below; (b) a decision on direct vs indirect method (indirect is conventional for SMEs and cheaper here); (c) disposal/provision transaction tagging in the posting rules. Until all three exist, the correct behaviour is to render no cash flow statement at all rather than a plausible wrong one.
+
 ## Design corrections captured this session
 - **Audit-log PK must be `(id, occurred_at)`** (partition column in every unique key), else the partitioned-table DDL fails. (`01` §6.)
 - **Retention is 5 years statutory (RR 7-2024)**, conflicting with 10 years in older issuances — engineer conservatively (10 yr) with a legal-hold flag. (See open items.)
@@ -49,6 +62,7 @@
 - The "RR 9-2009 prima-facie line-delete" claim was **wrong**; the append-only rule is grounded in **RMC 5-2021 Annex B item 10**.
 
 ## Accountant / CPA sign-off list (blocking for Phase 4; do not ship on Claude output alone)
+- **Cash-flow activity classification** (D23): the operating/investing/financing tag for every account in the chart, before any Statement of Cash Flows is built.
 - Chart-of-accounts structure + BIR field mappings (`bir_tax_type`, `bir_atc_code`, `bir_fs_line`) and the full ATC/alphalist code set.
 - Document book codes + number formats/starting series vs the BIR-registered CAS/AC series.
 - VAT recognition timing (Output vs Deferred-Output VAT on services; Input-VAT timing on the cash-basis vendor path).

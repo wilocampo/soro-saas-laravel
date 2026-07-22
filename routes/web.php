@@ -1,6 +1,8 @@
 <?php
 
+use App\Domain\Reports\DashboardSummary;
 use App\Http\Controllers\AgingController;
+use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
@@ -25,7 +27,14 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    // Dashboard-lite reads the tenant ledger, which only exists on a tenant
+    // connection — the landlord dashboard stays empty rather than querying
+    // tables that are not there.
+    return Inertia::render('Dashboard', [
+        'summary' => currentTenant() === null
+            ? null
+            : app(DashboardSummary::class)->forToday(),
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/notifications', function (Request $request) {
@@ -106,7 +115,17 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         Route::get('/income-statement', 'incomeStatement')->name('income-statement');
         Route::get('/general-ledger', 'generalLedger')->name('general-ledger');
         Route::get('/journal', 'journal')->name('journal');
+        Route::get('/statement-of-account', 'statementOfAccount')->name('soa');
     });
+
+    // Manual bank reconciliation. There is no adjustment field anywhere in
+    // this flow: a difference is an unbooked bank item, and the answer is to
+    // post it rather than plug the reconciliation.
+    Route::get('/reconciliations', [BankReconciliationController::class, 'index'])->name('reconciliations.index');
+    Route::post('/reconciliations', [BankReconciliationController::class, 'store'])->name('reconciliations.store');
+    Route::get('/reconciliations/{reconciliation}', [BankReconciliationController::class, 'show'])->name('reconciliations.show');
+    Route::post('/reconciliations/{reconciliation}/toggle', [BankReconciliationController::class, 'toggle'])->name('reconciliations.toggle');
+    Route::post('/reconciliations/{reconciliation}/complete', [BankReconciliationController::class, 'complete'])->name('reconciliations.complete');
 });
 
 Route::middleware('auth')->group(function () {

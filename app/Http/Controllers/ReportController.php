@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Compliance\ReportHeader;
+use App\Domain\Documents\Models\Partner;
 use App\Domain\Ledger\TrialBalanceService;
 use App\Domain\Reports\Export\ReportRenderer;
 use App\Domain\Reports\Export\ReportSheet;
@@ -10,6 +11,7 @@ use App\Domain\Reports\Export\ReportSheetFactory;
 use App\Domain\Reports\FinancialStatements;
 use App\Domain\Reports\GeneralLedgerReport;
 use App\Domain\Reports\JournalReport;
+use App\Domain\Reports\StatementOfAccount;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -94,6 +96,28 @@ class ReportController extends Controller
             'from' => $from,
             'to' => $to,
         ], fn () => app(ReportSheetFactory::class)->journal($from, $to, $book));
+    }
+
+    /** Customer statement of account (a SUPPLEMENTARY document — spec 03 §4). */
+    public function statementOfAccount(Request $request): Response
+    {
+        $customers = Partner::query()
+            ->where('is_customer', true)->orderBy('registered_name')
+            ->get(['id', 'code', 'registered_name']);
+
+        $partnerId = (int) ($request->integer('partner_id') ?: ($customers->first()->id ?? 0));
+        [$from, $to] = $this->range($request);
+
+        abort_if($partnerId === 0, 404, 'No customers exist yet.');
+
+        return Inertia::render('Reports/StatementOfAccount', [
+            'statement' => app(StatementOfAccount::class)->forCustomer($partnerId, $from, $to),
+            'customers' => $customers,
+            'partnerId' => $partnerId,
+            'from' => $from,
+            'to' => $to,
+            'header' => app(ReportHeader::class)->for('Statement of Account'),
+        ]);
     }
 
     /**
