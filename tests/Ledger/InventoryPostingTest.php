@@ -4,11 +4,10 @@ namespace Tests\Ledger;
 
 use App\Domain\Documents\DocumentPoster;
 use App\Domain\Documents\Models\Partner;
-use App\Domain\Documents\Models\Payment;
-use App\Domain\Documents\Models\PaymentAllocation;
 use App\Domain\Documents\Models\SalesInvoice;
 use App\Domain\Documents\Models\SalesInvoiceLine;
 use App\Domain\Inventory\Exceptions\InsufficientStock;
+use App\Domain\Inventory\Exceptions\InventoryException;
 use App\Domain\Inventory\Models\GoodsReceipt;
 use App\Domain\Inventory\Models\GoodsReceiptLine;
 use App\Domain\Inventory\StockLedger;
@@ -225,27 +224,34 @@ class InventoryPostingTest extends LedgerTestCase
     }
 
     /**
-     * Cash basis: revenue waits, but the goods have gone — so inventory
-     * falls now and the cost parks in Deferred COGS.
+     * D38 (CPA, 2026-07-24) — an inventory-carrying taxpayer cannot keep
+     * cash-basis books, so the combination is REFUSED at the stock ledger.
+     *
+     * This test previously asserted the opposite: that the cost parked in
+     * Deferred COGS while revenue waited for collection. That was a
+     * carefully-built answer to a question the CPA has since ruled out of
+     * existence, and the honest thing is to assert the refusal rather than
+     * keep testing a mode nobody may use.
      */
-    public function test_on_cash_basis_the_cost_defers_but_inventory_still_falls(): void
+    public function test_cash_basis_and_inventory_cannot_coexist(): void
     {
         $this->receive();
         DB::table('ledger_settings')->where('id', 1)->update(['accounting_basis' => 'cash']);
 
-        $invoice = $this->sell(qty: 20, netCentavos: 60_000, vatCentavos: 7_200);
-        $lines = $this->linesByCode((int) $invoice->journal_entry_id);
+        $this->expectException(InventoryException::class);
+        $this->expectExceptionMessage('cannot');
 
-        $this->assertSame(25_000, $lines['1450']['debit'], 'Deferred COGS holds the cost.');
-        $this->assertSame(25_000, $lines['1400']['credit'], 'Inventory falls when the goods leave.');
-        $this->assertArrayNotHasKey('4000', $lines, 'No revenue until collection.');
-        $this->assertArrayNotHasKey('1100', $lines, 'A cash-basis GL has no A/R.');
+        $this->sell(qty: 20, netCentavos: 60_000, vatCentavos: 7_200);
+    }
 
-        // The tie-out still holds, which is the whole reason for deferring
-        // the COST rather than the asset movement.
-        $this->assertSame(app(StockLedger::class)->valuationCentavos(), $this->accountBalance('1400'));
-        $this->artisan('inventory:verify')->assertSuccessful();
-        $this->assertTrialBalanceZero();
+    /** The guard bites on every movement type, not just sales (D38). */
+    public function test_the_cash_basis_guard_covers_receipts_too(): void
+    {
+        DB::table('ledger_settings')->where('id', 1)->update(['accounting_basis' => 'cash']);
+
+        $this->expectException(InventoryException::class);
+
+        $this->receive();
     }
 
     /** A services invoice on cash basis still posts nothing at all (S3). */
@@ -291,57 +297,18 @@ class InventoryPostingTest extends LedgerTestCase
         $this->assertTrialBalanceZero();
     }
 
-    /** Cash collection of a deferred sale moves the cost into COGS. */
-    public function test_collection_recognises_the_deferred_cost(): void
-    {
-        $this->receive();
-        DB::table('ledger_settings')->where('id', 1)->update(['accounting_basis' => 'cash']);
-
-        $customer = $this->customer();
-        $invoice = SalesInvoice::create([
-            'partner_id' => $customer->id,
-            'invoice_date' => CarbonImmutable::now()->toDateString(),
-            'status' => 'issued',
-        ]);
-        SalesInvoiceLine::create([
-            'sales_invoice_id' => $invoice->id,
-            'line_no' => 1,
-            'description' => 'Canned Sardines 155g',
-            'item_id' => $this->itemId,
-            'location_id' => $this->locationId,
-            'quantity' => 20,
-            'unit_price' => 30,
-            'net_centavos' => 60_000,
-            'vat_centavos' => 0,
-            'account_id' => $this->accountId('4000'),
-        ]);
-        $invoice->load('lines');
-        $invoice->recalculateTotals();
-        $invoice->save();
-        app(DocumentPoster::class)->post($invoice);
-
-        $payment = Payment::create([
-            'direction' => 'received',
-            'partner_id' => $customer->id,
-            'payment_date' => CarbonImmutable::now()->toDateString(),
-            'amount_centavos' => 60_000,
-            'cash_account_id' => $this->accountId('1000'),
-        ]);
-        PaymentAllocation::create([
-            'payment_id' => $payment->id,
-            'allocatable_type' => 'sales_invoice',
-            'allocatable_id' => $invoice->id,
-            'applied_centavos' => 60_000,
-        ]);
-        $entry = app(DocumentPoster::class)->post($payment->load('allocations'));
-
-        $lines = $this->linesByCode((int) $entry->id);
-        $this->assertSame(60_000, $lines['4000']['credit'], 'Revenue recognised at collection.');
-        $this->assertSame(25_000, $lines['5200']['debit'], 'The deferred cost becomes COGS.');
-        $this->assertSame(25_000, $lines['1450']['credit'], 'Deferred COGS is cleared.');
-
-        // Nothing is left parked once the sale is fully collected.
-        $this->assertSame(0, $this->accountBalance('1450'));
-        $this->assertTrialBalanceZero();
-    }
+    /*
+     * REMOVED 2026-07-24: test_collection_recognises_the_deferred_cost().
+     *
+     * It asserted that collecting a cash-basis stocked sale moved the cost
+     * out of Deferred COGS (1450) and into COGS. D38 makes that combination
+     * unreachable — a tenant carrying inventory may not keep cash-basis
+     * books — so the test could only ever have been made to pass by
+     * disabling the guard it now contradicts.
+     *
+     * The Deferred COGS branch of `CostOfSales` and account 1450 are dead
+     * for the same reason and are scheduled for removal. They are left in
+     * place for now so the removal is one reviewable change rather than
+     * noise inside this one.
+     */
 }

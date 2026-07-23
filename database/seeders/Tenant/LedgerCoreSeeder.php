@@ -57,6 +57,12 @@ class LedgerCoreSeeder extends Seeder
             ['2000', 'Accounts Payable', 'liability', 'credit', false, false],
             ['2100', 'Output VAT', 'liability', 'credit', false, false],
             ['2150', 'Withholding Tax Payable', 'liability', 'credit', false, false], // 1601EQ
+            // D32 (CPA, 2026-07-24): a percentage-tax registrant files 2551Q
+            // and needs somewhere to accrue it. An 8% elector files NEITHER
+            // 2551Q nor this — the 8% is in lieu of percentage tax — so the
+            // return set follows the date-effective `tax_regimes` row, not
+            // the VAT flag.
+            ['2160', 'Percentage Tax Payable', 'liability', 'credit', false, false], // 2551Q
             // Goods received but not yet invoiced: the receipt credits this
             // and the vendor's bill later clears it to A/P (08 §3, D15).
             ['2050', 'Goods Received Not Invoiced', 'liability', 'credit', false, true],
@@ -180,6 +186,53 @@ class LedgerCoreSeeder extends Seeder
             ['code' => 'OV12', 'kind' => 'output_vat', 'rate_bp' => 1200, 'account_id' => $accountId['2100'], 'default_atc' => null, 'effective_from' => '2024-01-01', 'effective_to' => null],
             ['code' => 'IV12', 'kind' => 'input_vat', 'rate_bp' => 1200, 'account_id' => $accountId['1200'], 'default_atc' => null, 'effective_from' => '2024-01-01', 'effective_to' => null],
         ]);
+
+        // --- expanded-withholding rates (D25, CPA-confirmed 2026-07-24) ---
+        //
+        // These are the seven payment types the CPA confirmed (fourteen rows
+        // — each splits individual/juridical). They are NOT the whole ATC
+        // library, and the gap is deliberate: `TaxResolver` throws
+        // rather than guess, so a payment type that is not here fails loudly
+        // at posting instead of withholding a made-up rate.
+        //
+        // Commissions/brokerage is WI515/WC515. Our earlier draft had
+        // WI139/WI140 and WC139/WC140 — wrong, and corrected by the CPA. It
+        // never reached a calculation because this table was empty.
+        //
+        // Not seeded on purpose: WC157/WI157 and WC640/WI640 are GOVERNMENT
+        // payment codes. Auto-assigning them to private purchases fails
+        // alphalist validation, so they stay out until a government-payee
+        // flow exists to claim them.
+        //
+        // The 5% individual professional rate and the 10% juridical rate are
+        // conditional on a valid sworn declaration; absent or expired
+        // resolves the HIGHER row (D26 — prospective, never retroactive).
+        DB::table('atc_rates')->insert(array_map(fn (array $r) => [
+            'atc_code' => $r[0],
+            'description' => $r[1],
+            'payee_type' => $r[2],
+            'rate_bp' => $r[3],
+            'threshold_centavos' => $r[4],
+            'requires_sworn_declaration' => $r[5],
+            'legal_basis' => $r[6],
+            'effective_from' => '2018-01-01',
+            'effective_to' => null,
+        ], [
+            ['WI010', 'Professional/talent fees — individual, within threshold', 'individual', 500, 300_000_000, true, 'RR 11-2018 / RR 14-2018'],
+            ['WI011', 'Professional/talent fees — individual, above threshold', 'individual', 1000, null, false, 'RR 11-2018 / RR 14-2018'],
+            ['WC010', 'Professional fees — juridical, within threshold', 'juridical', 1000, 72_000_000, true, 'RR 11-2018'],
+            ['WC011', 'Professional fees — juridical, above threshold', 'juridical', 1500, null, false, 'RR 11-2018'],
+            ['WI100', 'Rentals — real/personal property, individual', 'individual', 500, null, false, 'RR 2-98 §2.57.2(C)'],
+            ['WC100', 'Rentals — real/personal property, juridical', 'juridical', 500, null, false, 'RR 2-98 §2.57.2(C)'],
+            ['WI120', 'Contractors/subcontractors — individual', 'individual', 200, null, false, 'RR 2-98 §2.57.2'],
+            ['WC120', 'Contractors/subcontractors — juridical', 'juridical', 200, null, false, 'RR 2-98 §2.57.2'],
+            ['WI158', 'TWA → local supplier of GOODS, individual', 'individual', 100, null, false, 'RR 11-2018 (TWA only)'],
+            ['WC158', 'TWA → local supplier of GOODS, juridical', 'juridical', 100, null, false, 'RR 11-2018 (TWA only)'],
+            ['WI160', 'TWA → local supplier of SERVICES, individual', 'individual', 200, null, false, 'RR 11-2018 (TWA only)'],
+            ['WC160', 'TWA → local supplier of SERVICES, juridical', 'juridical', 200, null, false, 'RR 11-2018 (TWA only)'],
+            ['WI515', 'Commissions/brokerage — individual', 'individual', 500, null, true, 'RR 11-2018 (CPA-confirmed 2026-07-24)'],
+            ['WC515', 'Commissions/brokerage — juridical', 'juridical', 1000, null, false, 'RR 11-2018 (CPA-confirmed 2026-07-24)'],
+        ]));
 
         // --- inventory reference data (08 §1) -----------------------------
         // A handful of PH-retail-typical units; the dimension exists from

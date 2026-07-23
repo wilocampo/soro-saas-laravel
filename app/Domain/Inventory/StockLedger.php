@@ -25,6 +25,9 @@ class StockLedger
     /** Movement types that consume stock; used for the negative-stock gate. */
     private const OUTBOUND = ['sale', 'adjust_out', 'transfer_out'];
 
+    /** Memoised per instance — the basis cannot change mid-request. */
+    private ?bool $basisAllowsInventory = null;
+
     /**
      * Record one movement. Returns the movement id.
      *
@@ -47,6 +50,8 @@ class StockLedger
         if ($this->isZero($qtyDelta)) {
             throw new InventoryException('A stock movement of zero quantity records nothing.');
         }
+
+        $this->assertBasisSupportsInventory();
 
         $outbound = in_array($movementType, self::OUTBOUND, true);
 
@@ -103,6 +108,36 @@ class StockLedger
     }
 
     /** On-hand at one location, from the cache. */
+    /**
+     * D38 (CPA, 2026-07-24) — an inventory-carrying taxpayer cannot keep
+     * cash-basis books.
+     *
+     * The guard lives HERE rather than at item creation because this is the
+     * one place every movement passes through: a receipt, a sale, a count
+     * adjustment and a transfer all land in `record()`. Blocking at item
+     * creation would still let a tenant that was switched to cash basis
+     * afterwards keep moving the stock it already had.
+     *
+     * We built the opposite assumption in Phase 2b — the Deferred COGS path
+     * (`CostOfSales::lines(..., deferred: true)`, account 1450) existed to
+     * serve exactly this combination. The CPA retired it, so that branch is
+     * now unreachable and is scheduled for removal rather than left looking
+     * like a supported mode.
+     */
+    private function assertBasisSupportsInventory(): void
+    {
+        $this->basisAllowsInventory ??= DB::table('ledger_settings')
+            ->where('id', 1)
+            ->value('accounting_basis') !== 'cash';
+
+        if (! $this->basisAllowsInventory) {
+            throw new InventoryException(
+                'This tenant keeps cash-basis books, and a business carrying inventory cannot '
+                .'(D38 — CPA, 2026-07-24). Move it to the accrual basis before recording stock.'
+            );
+        }
+    }
+
     public function onHand(int $itemId, int $locationId): string
     {
         $qty = DB::table('item_location_balances')
