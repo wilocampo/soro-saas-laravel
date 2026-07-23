@@ -66,8 +66,9 @@ All flow through `PostingService` with idempotency keys (`goods_receipt:{id}:pos
 ## 6. BIR touchpoints (feeds `03-bir-accreditation.md`)
 - **Inventory Book** joins the books-of-accounts output (RMC 5-2021 Annex B item 3(e)) — generated from `stock_movements` + valuations, with the mandatory header/footer.
 - **Annual Inventory List** submission (due ~30 days after FY close) — generated from the FY-end count/valuation.
-- Costing-method consistency: weighted average must be applied consistently and declared; method changes need BIR/CPA involvement — record in `06` sign-offs.
-- Spoilage/shrinkage documentation for deductibility — CPA sign-off item.
+- **Costing-method consistency** — ✅ **CPA-confirmed 2026-07-24 (D39):** weighted average is fine, is **disclosed in the FS/ITR**, and **a change of method requires PRIOR BIR consent**. Build consequence: the costing method **locks at go-live** and may only be changed against a recorded consent reference — it is not a settings toggle.
+- **Spoilage/shrinkage deductibility** — ✅ **CPA-answered 2026-07-24 (D39):** deductible only through the **RMO 21-2020 destruction/disposal process**. Build consequence: a write-off needs an associated destruction record (application, schedule, BIR witness / Certificate of Deduction) before it counts as deductible, and the shrinkage report must **separate documented from undocumented losses** — an undocumented write-off is a book expense that is not a tax deduction, and the report should not let those look alike.
+- **⛔ Cash basis is unavailable to inventory-carrying tenants** (D38, CPA 2026-07-24). This retires the Deferred COGS path (account 1450 and `CostOfSales::lines(..., deferred: true)`), which existed only to serve that combination. Enforce at settings level; the dead branch is pending removal.
 
 ## 7. What we deliberately do NOT copy from ninetails
 - The overloaded `transactions` table with magic `trans_type_id` integers — every document type gets its own table here.
@@ -81,5 +82,5 @@ Inventory lands as **Phase 2b** (after core documents exist, since COGS hooks th
 ## New open decisions (also in `06`)
 - **D14** Per-item global vs per-location average cost (v1: global; revisit v2).
 - **D15** GRNI flow in v1 vs "receive always creates the bill" (ninetails treated receive=bill; GRNI is cleaner — default GRNI).
-- **D16** Found-stock credit account (Shrinkage contra vs Other Income) — CPA.
+- **D16** ✅ **RESOLVED (CPA, 2026-07-24 — briefing Q20):** found stock credits **Inventory Shrinkage**. Net-to-shrinkage is standard and keeps the trend report honest. Built as-is; no change.
 - **D17** Negative stock: block (default) vs warn.

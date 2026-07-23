@@ -244,7 +244,7 @@ Non-VAT taxpayers keep **4** (General Journal, General Ledger, Cash Receipts, Ca
 | Contractors/subcontractors | 2% | WC120 / WI120 | RR 2-98 §2.57.2 |
 | TWA → local supplier, **goods** | 1% | WC158 / WI158 | Only if payor is a designated Top Withholding Agent |
 | TWA → local supplier, **services** | 2% | WC160 / WI160 | Only if payor is a designated TWA |
-| Commissions/brokerage (non-employee) | 5%/10% (ind.), 10%/15% (corp.) | WI139/WI140, WC139/WC140 | ⚠️ code numbers unverified in detail — validate before seeding |
+| Commissions/brokerage (non-employee) | 5%/10% (ind.), 10%/15% (corp.) | **WI515 / WC515** | ✅ **CPA-corrected 2026-07-24** — the earlier WI139/WI140, WC139/WC140 guess was WRONG. Seed the full table from the eBIRForms ATC library (D25) |
 
 - **Sworn declaration is stateful** (the 5% individual rate depends on the annual "Income Payee's Sworn Declaration of Gross Receipts/Sales" + COR). **Build implication:** Store declaration status + validity window per vendor; default to the higher rate when absent/expired.
 - **TWA status is set by BIR's published list, not self-assessment.** RR 31-2020 (issued 18 Dec 2020) sets criteria (₱12M gross sales/receipts/purchases for Groups A/B; ₱5M for Groups C/D/E), but a taxpayer becomes a TWA only when published/notified. **Build implication:** Gate the 1%/2% goods-vs-services ATCs behind a per-tenant "is TWA (effective date X)" flag.
@@ -354,18 +354,18 @@ To be compliant later, the software must persist these from first entry — reco
 
 ## Open items needing a PH CPA / tax lawyer
 
-- **Retention period 5 vs 10 years (live conflict):** RR 7-2024 (EOPT) sets the statutory period at **5 years**, but **RMC 5-2021 Annex B item 7** and RR 17-2013/RR 5-2014 still literally say **10 years** (5 hardcopy + 5 electronic). Confirm the operative CAS obligation; engineer conservatively meanwhile.
+- ~~**Retention period 5 vs 10 years**~~ ✅ **RESOLVED (CPA, 2026-07-24 — D33):** the legal **floor is 5 years** (RR 7-2024); the pending-case extension is confirmed. **We keep 10 years as policy** and the legal-hold flag matches the rule. No change.
 - **⚠️ "2 Oct 2025 full ORUS-for-CAS rollout" date** — unverified; confirm the exact issuance that opened CAS AC registration in ORUS.
 - **Exact CDR / RMO 9-2021 Annex-A line items** and current Citizen's-Charter wording — confirm against the live CDR-2025 PDF and ORUS form.
 - **⚠️ White-out / "computer-generated line-delete = prima facie violation"** — not in RR 9-2009; source unconfirmed (likely the 1947 Bookkeeping Regs). Don't cite RR 9-2009 for it.
 - **Exact RR 9-2009 subsection numbers** cited in §2 (primary full text was unreachable) — verify to the digit.
-- **VAT rounding method** — no BIR issuance prescribes half-up vs bankers', per-line vs per-invoice; confirm against current 2550Q/eBIRForms behavior.
+- ~~**VAT rounding method**~~ ✅ **RESOLVED (CPA, 2026-07-24 — D24):** per-line half-up, VAT-inclusive backs out the net so VAT is the remainder. No issuance prescribes a method; **consistency is what is audited**, so the same policy must hold on screen, in the posting and in the return.
 - **Post-EOPT NIRC renumbering** (e.g., Sec. 109(CC) vs (BB); Sec. 110(D)) and RR 3-2024 internal section numbering (e.g., the "Sec. 4.110-9" cited by one advisory) — verify against the consolidated post-EOPT NIRC.
 - **⚠️ Five "input-tax-fatal" omissions internal cite ("Sec. 3(D)(3)")** — likely RR 7-2024 Sec. 3(B)/Sec. 6; confirm the subsection lettering. Substance is confirmed.
-- **⚠️ "Gapless" serial wording and "ACCN must appear on the face"** — no single issuance uses these literal terms; confirm before hard-coding as validation.
+- ~~**⚠️ "Gapless" serial wording and "ACCN must appear on the face"**~~ ✅ **RESOLVED (CPA, 2026-07-24 — D35):** "gapless" is **our** word, not BIR's — the rule is **sequential, unique, non-reusable**; keep the behaviour, drop the word from validation messages and product copy. **The ACCN IS required on the face** of issued documents.
 - **⚠️ "Ibex Global CTA Case No. 11075"** — docket/caption unverified; don't cite as authority.
-- **Full current ATC↔rate mapping** (esp. commissions/brokerage WI139/WI140, WC139/WC140) — validate the complete table against the current eBIRForms/eFPS ATC library before seeding.
-- **RR 31-2020 TWA thresholds/groupings** (₱12M vs ₱5M by group) and the exact "published list" effective-date mechanics.
+- **Full current ATC↔rate mapping** — ◐ **PARTLY RESOLVED (CPA, 2026-07-24 — D25):** the seven drafted rows are confirmed and commissions/brokerage corrected to **WI515/WC515**. The complete table still must be seeded from the current eBIRForms/eFPS ATC library — **outstanding, and it blocks the withholding engine**.
+- ~~**RR 31-2020 TWA thresholds/groupings**~~ ✅ **RESOLVED (CPA, 2026-07-24 — D27):** the obligation starts the **1st of the month following publication**, and **de-listing likewise takes effect by publication** — hence `twa_effective_to` alongside `twa_effective_from`. Status is conferred by the published list, never computed.
 - **RR 4-2024 exact effectivity** (posting 12 Apr 2024 → ~27 Apr 2024) and **RR 3-2024 effectivity** — confirm precise dates if load-bearing.
 - **SLSP purchases-list threshold** — whether RR 1-2012 fully removed the ₱1M-quarterly-purchases threshold gating the SLP.
 - **⚠️ RMC 4-2021** as the eBIRForms/eFPS-mandate authority — unverified; confirm the correct issuance.

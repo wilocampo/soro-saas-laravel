@@ -7,6 +7,64 @@
 
 ---
 
+## ✅ ANSWERED — 2026-07-24
+
+All 23 questions came back. **Sixteen confirmed as drafted, seven corrected.** The authoritative record of what each answer changes is **[`docs/specs/06-decisions.md`](specs/06-decisions.md) D24–D41** — that is what the build reads. The table below is the CPA's verdict as received.
+
+| Q | Verdict | Answer |
+|---|---|---|
+| Q1 | ✅ Confirm | Per-line half-up, inclusive-as-remainder. No issuance prescribes a method — **consistency is what's audited** |
+| Q2 | ✏️ Corrections | Table mostly right; commissions are **WI515/WC515**; seed the rest from the eBIRForms ATC library |
+| Q3 | ✅ Confirm | Prospective, default to the higher rate. Good-faith reliance on the declaration is the design of RR 11-2018 |
+| Q4 | ✅ + 1 field | Obligation starts the **1st of the month after publication**; delisting also by publication → add `twa_effective_to` |
+| Q5 | ✅ + 2 notes | Invoice-date output VAT for goods and services (RR 3-2024); transitional pre-EOPT service receivables; new uncollected-receivables output-VAT credit |
+| Q6 | ✅ refined | Return follows the **payable date** (due, demandable or legally enforceable) regardless of basis; extract from the **bills subledger, not the GL** |
+| Q7 | ✏️ Both flows | Security deposit = liability, no VAT. Advance payment = invoice + VAT on receipt |
+| Q8 | ✅ Current period | Sec. 106(D); own registered series (supplementary doc); deduction on the 2550Q, adjustment in SLSP |
+| Q9 | ✏️ Add 2551Q | PT clients need 2551Q; 8% electors get none (8% is in lieu); non-VAT invoices carry the **"not valid for claim of input tax"** legend |
+| Q10 | ✅ Keep ten | Legal floor is five (RR 7-2024); pending-case extension confirmed; the legal-hold flag matches the rule |
+| Q11 | ✏️ Additions | Add a **user-access/activity log**, a **printable audit-trail report**, and the **registration documentation package** |
+| Q12 | ✅ Confirm | Series must match the sworn statement filed at AC registration; per branch; continuation on migration is right |
+| Q13 | ✏️ Print ACCN | "Gapless" is convention — sequential/unique/non-reusable is the actual rule (keep the behaviour). **ACCN on the face is required** |
+| Q14 | ✏️ Corrections | Split withholding payables by type; split Input VAT to feed the 2550Q lines; add Percentage Tax Payable; no Deferred Input VAT (capital-goods amortisation ended for purchases after 2021) |
+| Q15 | ✏️ Verify as flagged | Threshold likely Sec. 109(CC) post-CREATE; 110(D) plausibly the EOPT uncollected-receivables insert. Nothing load-bearing |
+| Q16 | ✅ Confirm | Income Summary → RE is fine; sole props close Drawings to Owner's Capital; book-tax differences live outside the books |
+| Q17 | ✅ Confirm | OBE-as-plug standard; **FY-start strongly preferred**, period-start allowed with a warning |
+| Q18 | ⚠️ Qualified | No A/R–A/P control accounts is fine for a genuine cash-basis **service** business; **VAT stays invoice-basis regardless**; **inventory clients cannot be cash basis** |
+| Q19 | ✏️ (b) changes | (a) weighted average fine, disclosed in FS/ITR, **change needs prior BIR consent**; (b) **RMO 21-2020 destruction process** required for deductibility |
+| Q20 | ✅ Confirm | Net-to-shrinkage is standard and keeps the trend report honest |
+| Q21 | ✅ Confirm | Indirect method for SMEs; classification supplied with the chart review |
+| Q22 | ✏️ See Q6 | Entries arithmetically correct; the cash-basis VAT rows need the Q6/Q18 fix |
+| Q23 | ✅ Sound | DPA Sec. 12(c) "legal obligation" ground; erasure is not absolute and is refusable for mandated records — still route to counsel |
+
+### What the answers cost us
+
+**One shipped defect.** Q18's *"VAT stays invoice-basis regardless"* contradicts what we built: a cash-basis invoice currently posts **no output VAT at all** and recognises it at collection. For a cash-basis VAT-registered client that understates every 2550Q by a quarter or more. See D28 and the open follow-up below.
+
+**One mechanism made unreachable.** Q18's *"inventory clients cannot be cash basis"* retires the Deferred COGS path built in Phase 2b (account 1450 and the `deferred: true` branch of `CostOfSales`). The guard is the fix; the dead branch is scheduled for removal.
+
+**One guess corrected.** Our commissions ATC codes (WI139/WI140, WC139/WC140) were wrong — they are **WI515/WC515**. This is exactly what the ⚠️ marker was for, and why the table was never seeded.
+
+### Still outstanding
+
+1. **The eBIRForms ATC library** (Q2) — the seven rows in Q2 are confirmed and can be seeded now; the full table still needs the authoritative source.
+2. **The chart review** (Q14, Q21) — corrections and the operating/investing/financing classification were promised "with the chart review", not yet received.
+3. **One follow-up** (below) — the only place two answers do not compose.
+
+### Follow-up question — FQ1: the balancing debit for cash-basis output VAT
+
+Q18 says output VAT is recognised **at invoice date even for a cash-basis client**, and that such a client legitimately has **no A/R control account**. Those two do not compose: recognising output VAT at invoice needs a balancing debit, and the natural debit is a receivable the cash-basis client does not maintain.
+
+Which entry do you want on a cash-basis VAT-registered client's invoice?
+
+- **(a)** `Dr A/R 11,200 / Cr Deferred Revenue 10,000 / Cr Output VAT 1,200`, then at collection `Dr Cash / Cr A/R` and `Dr Deferred Revenue / Cr Sales`. Correct VAT, but the client now carries A/R and deferred revenue — arguably no longer cash-basis books.
+- **(b)** `Dr VAT Receivable 1,200 / Cr Output VAT 1,200` at invoice; revenue and the VAT receivable clear at collection. Keeps the books cash-basis and the VAT return right, at the cost of a non-standard asset account.
+- **(c)** The combination is rare enough that we should simply **prohibit cash basis for VAT-registered clients**, the same way inventory now prohibits it.
+
+We have deliberately built none of these. **(c) is the cheapest and we suspect the most honest**, but it is a policy call about who can use the product, not an engineering one.
+
+---
+
 ## 1. What we are asking you to do
 
 We have built a double-entry accounting system for Philippine SMEs. The ledger, documents, inventory, reports and the SaaS shell are complete and tested. **The BIR returns-and-books layer is deliberately not built yet**, because roughly twenty treatments in it are judgement calls we are not qualified to make, and several of them are baked into files that get filed with the BIR.
