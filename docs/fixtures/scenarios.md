@@ -23,10 +23,12 @@ Trial balance after: debits 550,000 = credits 550,000. ✔
 TB effect: +11,200 debit / +11,200 credit. ✔
 
 ## S3 — Same invoice, **cash basis**
-`build()` returns an empty draft → `post()` returns `null` → **no journal entry**. The invoice is recorded in the subledger (with a VAT snapshot for later recognition) and appears in A/R aging only. Recognition occurs at collection (S4 cash-basis rows).
+`build()` returns an empty draft → `post()` returns `null` → **no journal entry**. The invoice is recorded in the subledger (with a VAT snapshot for later recognition) and appears in A/R aging only. Recognition of *revenue* occurs at collection (S4 cash-basis rows).
+
+> **VAT-RETURN INVARIANT (D28, draft-answers Q5/Q18/Q22).** For a VAT-registered tenant the **2550Q, sales journal and SLSP are generated from the invoice subledger by INVOICE DATE, regardless of book basis** — never from the cash-basis GL. Here output VAT belongs to the 2550Q of S2's invoice date even though the GL recognises it only at S4 collection. The GL and the VAT return legitimately diverge by the credit period; a VAT-vs-GL reconciliation explains it. Wiring the return generator to the GL instead files every cash-basis client's VAT a quarter late — this is the single easiest way to get the return layer wrong, so it is called out here rather than left implicit.
 
 ## S4 — Customer collection with 2% creditable EWT (TWA customer, services — ATC WC160)
-Customer pays the S2 invoice, withholding 2% of net (200). Cash received = 11,000.
+Customer pays the S2 invoice, withholding 2% of net (200). Cash received = 11,000. The EWT base is the **VAT-exclusive** ₱10,000 (2% × 10,000 = 200) **by rule**, not for convenience — state that in the fixture. The premise that the *customer* withholds WC160 at 2% holds only while the customer is a designated TWA (as this fixture states).
 **Accrual** (`cash_receipts`):
 | Account | Debit | Credit |
 |---|--:|--:|

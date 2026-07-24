@@ -7,14 +7,18 @@
 
 ---
 
-## ✅ ANSWERED — 2026-07-24
+## ◐ DRAFT ANSWERS RECORDED — 2026-07-24 (licensed CPA sign-off still pending)
 
-All 23 questions came back. **Sixteen confirmed as drafted, seven corrected.** The authoritative record of what each answer changes is **[`docs/specs/06-decisions.md`](specs/06-decisions.md) D24–D41** — that is what the build reads. The table below is the CPA's verdict as received.
+All 23 questions have **draft answers** in [`docs/cpa-briefing-draft-answers.md`](cpa-briefing-draft-answers.md): **sixteen confirm-as-drafted, seven corrected.** Those answers are **AI-assisted research, not a licensed Philippine CPA's sign-off** — that document's §4 lists the items a practitioner must still decide (the seeded ATC table, the chart review, the mid-year ₱3M catch-up rule, SLSP credit-note presentation, the RMO 21-2020 notice window, counsel's erasure nod). We build against the drafts because they let the reviewer *confirm rather than compose*; nothing here is settled.
+
+The authoritative record of what each answer changes for the build is **[`docs/specs/06-decisions.md`](specs/06-decisions.md) D24–D42** — that is what the code reads. The table below is the draft verdict.
+
+**Two things this review corrected in the earlier pass:** the commissions codes are **WI515/WC515 at a flat 10%** (an intermediate fix had seeded WI515 at 5% with professional-fee logic), and **FQ1 is resolved, not a defect** — see the follow-up section below.
 
 | Q | Verdict | Answer |
 |---|---|---|
 | Q1 | ✅ Confirm | Per-line half-up, inclusive-as-remainder. No issuance prescribes a method — **consistency is what's audited** |
-| Q2 | ✏️ Corrections | Table mostly right; commissions are **WI515/WC515**; seed the rest from the eBIRForms ATC library |
+| Q2 | ✏️ Corrections | Table mostly right; commissions are **WI515/WC515 at flat 10%** (generic commissions → professional fees WI010/WI011); seed the rest from the eBIRForms ATC library |
 | Q3 | ✅ Confirm | Prospective, default to the higher rate. Good-faith reliance on the declaration is the design of RR 11-2018 |
 | Q4 | ✅ + 1 field | Obligation starts the **1st of the month after publication**; delisting also by publication → add `twa_effective_to` |
 | Q5 | ✅ + 2 notes | Invoice-date output VAT for goods and services (RR 3-2024); transitional pre-EOPT service receivables; new uncollected-receivables output-VAT credit |
@@ -34,34 +38,34 @@ All 23 questions came back. **Sixteen confirmed as drafted, seven corrected.** T
 | Q19 | ✏️ (b) changes | (a) weighted average fine, disclosed in FS/ITR, **change needs prior BIR consent**; (b) **RMO 21-2020 destruction process** required for deductibility |
 | Q20 | ✅ Confirm | Net-to-shrinkage is standard and keeps the trend report honest |
 | Q21 | ✅ Confirm | Indirect method for SMEs; classification supplied with the chart review |
-| Q22 | ✏️ See Q6 | Entries arithmetically correct; the cash-basis VAT rows need the Q6/Q18 fix |
+| Q22 | ✏️ Invariant | Entries arithmetically correct; the cash-basis VAT rows are right for the GL — the invariant (2550Q reads the invoice subledger by invoice date) is now written into the fixtures |
 | Q23 | ✅ Sound | DPA Sec. 12(c) "legal obligation" ground; erasure is not absolute and is refusable for mandated records — still route to counsel |
 
 ### What the answers cost us
 
-**One shipped defect.** Q18's *"VAT stays invoice-basis regardless"* contradicts what we built: a cash-basis invoice currently posts **no output VAT at all** and recognises it at collection. For a cash-basis VAT-registered client that understates every 2550Q by a quarter or more. See D28 and the open follow-up below.
+**No shipped defect after all — my earlier read was wrong.** I first called the cash-basis VAT handling a defect. Re-reading the fuller answers (Q5, Q18, Q22 finding #6), the current behaviour is *correct*: a cash-basis GL should **not** book output VAT at invoice — it recognises it at collection — while the **2550Q reads the invoice subledger by invoice date**. The GL and the VAT return legitimately diverge and reconcile over time. The posting rule stays as built; the constraint moves onto the not-yet-written return generator, now a hard invariant in the fixtures. See **FQ1 resolved** below.
 
 **One mechanism made unreachable.** Q18's *"inventory clients cannot be cash basis"* retires the Deferred COGS path built in Phase 2b (account 1450 and the `deferred: true` branch of `CostOfSales`). The guard is the fix; the dead branch is scheduled for removal.
 
-**One guess corrected.** Our commissions ATC codes (WI139/WI140, WC139/WC140) were wrong — they are **WI515/WC515**. This is exactly what the ⚠️ marker was for, and why the table was never seeded.
+**One rate corrected twice.** The commissions codes were WI139/WI140, WC139/WC140 (wrong codes), then WI515 seeded at 5% with professional-fee sworn-declaration logic (wrong rate). Both fixed: **WI515/WC515 is a flat 10% broker/agent pair**, and generic commissions are professional fees (WI010/WI011). It never reached a live calculation — the refuse-to-guess resolver saw to that — and `AtcRatesTest` now pins both errors down.
+
+**A labelling correction.** The earlier pass wrote "CPA-confirmed" into code comments and specs. These are **research draft answers, not a licensed CPA's**, so those labels are corrected throughout to say so.
 
 ### Still outstanding
 
-1. **The eBIRForms ATC library** (Q2) — the seven rows in Q2 are confirmed and can be seeded now; the full table still needs the authoritative source.
-2. **The chart review** (Q14, Q21) — corrections and the operating/investing/financing classification were promised "with the chart review", not yet received.
-3. **One follow-up** (below) — the only place two answers do not compose.
+1. **The eBIRForms ATC library** (Q2) — the confirmed rows are seeded (WI515/WC515 corrected); the full table still needs the authoritative source, and the seeded rates/scope are a reviewer-confirm item.
+2. **The chart review** (Q14, Q21) — the six structural corrections, the BIR attribute columns, and the operating/investing/financing classification were promised "with the chart review", not yet received.
+3. **Licensed sign-off** on the `draft-answers §4` items — nothing here is settled without it.
 
-### Follow-up question — FQ1: the balancing debit for cash-basis output VAT
+### FQ1 — RESOLVED (the follow-up had a false premise)
 
-Q18 says output VAT is recognised **at invoice date even for a cash-basis client**, and that such a client legitimately has **no A/R control account**. Those two do not compose: recognising output VAT at invoice needs a balancing debit, and the natural debit is a receivable the cash-basis client does not maintain.
+I raised FQ1 asking which entry balances a cash-basis output-VAT line at invoice. The fuller answers make the question moot: **there is no output-VAT line in a cash-basis GL at invoice.** The correct design is —
 
-Which entry do you want on a cash-basis VAT-registered client's invoice?
+- the cash-basis GL recognises revenue and output VAT **at collection** (already built);
+- the **2550Q, sales journal and SLSP are generated from the invoice subledger by invoice date**, never from the GL — a future-generator invariant now recorded in [`fixtures/scenarios.md`](fixtures/scenarios.md) S3/S4;
+- a **VAT-vs-GL reconciliation** ships for cash-basis VAT tenants, and onboarding **advises** (does not force) accrual for VAT-registered tenants, since the divergence is permanent though explainable.
 
-- **(a)** `Dr A/R 11,200 / Cr Deferred Revenue 10,000 / Cr Output VAT 1,200`, then at collection `Dr Cash / Cr A/R` and `Dr Deferred Revenue / Cr Sales`. Correct VAT, but the client now carries A/R and deferred revenue — arguably no longer cash-basis books.
-- **(b)** `Dr VAT Receivable 1,200 / Cr Output VAT 1,200` at invoice; revenue and the VAT receivable clear at collection. Keeps the books cash-basis and the VAT return right, at the cost of a non-standard asset account.
-- **(c)** The combination is rare enough that we should simply **prohibit cash basis for VAT-registered clients**, the same way inventory now prohibits it.
-
-We have deliberately built none of these. **(c) is the cheapest and we suspect the most honest**, but it is a policy call about who can use the product, not an engineering one.
+So **cash + VAT-registered is a permitted combination** — only cash + inventory is barred (D38) — and none of the three candidate entries I proposed (a)/(b)/(c) is needed. My earlier recommendation of (c), *prohibit*, is withdrawn.
 
 ---
 

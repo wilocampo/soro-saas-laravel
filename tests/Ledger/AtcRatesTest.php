@@ -8,18 +8,22 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * D25 (CPA-confirmed 2026-07-24) — the expanded-withholding rate table.
+ * D25 (research draft — licensed CPA sign-off pending) — the
+ * expanded-withholding rate table.
  *
  * This table is the withholding engine: every 2307, 0619-E, 1601-EQ, QAP and
  * 1604-E is generated from it, so a wrong code fails alphalist validation and
  * a wrong rate under-remits somebody's tax.
  *
  * It is tested harder than its size suggests because it is the one place a
- * plausible-looking guess would have shipped silently. Our drafted
- * commissions codes (WI139/WI140, WC139/WC140) were WRONG; the CPA corrected
- * them to WI515/WC515. They never reached a calculation only because the
- * table was empty and `TaxResolver` throws rather than invent a rate — which
- * is the property the last test here pins down.
+ * plausible-looking guess would have shipped silently — and it took TWO tries
+ * to get the commissions row right. The first draft used WI139/WI140,
+ * WC139/WC140 (wrong codes); the fix that replaced them seeded WI515 at 5%
+ * with the professional-fee sworn-declaration logic (also wrong — WI515/WC515
+ * is a flat 10% broker/agent pair). Both errors are pinned here so neither
+ * can creep back. They never reached a live calculation only because the
+ * table was incomplete and `TaxResolver` throws rather than invent a rate —
+ * the property the refuse-to-guess test at the end guards.
  */
 class AtcRatesTest extends LedgerTestCase
 {
@@ -28,10 +32,12 @@ class AtcRatesTest extends LedgerTestCase
         return app(TaxResolver::class)->atcRateBp($atc, $payeeType, CarbonImmutable::parse('2026-07-24'));
     }
 
-    /** The correction itself: commissions are 515, not the 139/140 we drafted. */
-    public function test_commissions_use_the_cpa_corrected_codes(): void
+    /** The correction: WI515/WC515 is a FLAT 10% pair, not 139/140, not 5%. */
+    public function test_commissions_use_the_corrected_codes_and_rate(): void
     {
-        $this->assertSame(500, $this->rate('WI515', 'individual'));
+        // Both sides of the pair are 10%. The 5% we first seeded on WI515 was
+        // the professional-fee logic bleeding into a flat-rate broker code.
+        $this->assertSame(1000, $this->rate('WI515', 'individual'));
         $this->assertSame(1000, $this->rate('WC515', 'juridical'));
 
         // The wrong codes must not resolve to anything at all. If someone
@@ -54,13 +60,17 @@ class AtcRatesTest extends LedgerTestCase
         $this->assertSame(200, $this->rate('WC160', 'juridical'), 'TWA → services.');
     }
 
-    /** D26 — the reduced rates are the ones gated on a sworn declaration. */
-    public function test_only_the_reduced_rates_depend_on_a_sworn_declaration(): void
+    /**
+     * D26 — the sworn-declaration gate belongs ONLY to the professional-fee
+     * codes. WI515 (broker/agent commissions) is flat 10% and must NOT be in
+     * this set — its presence here was the bug this test now guards against.
+     */
+    public function test_only_the_professional_fee_rates_depend_on_a_sworn_declaration(): void
     {
         $gated = DB::table('atc_rates')->where('requires_sworn_declaration', true)->pluck('atc_code')->all();
 
         sort($gated);
-        $this->assertSame(['WC010', 'WI010', 'WI515'], $gated);
+        $this->assertSame(['WC010', 'WI010'], $gated);
     }
 
     /**

@@ -224,14 +224,15 @@ class InventoryPostingTest extends LedgerTestCase
     }
 
     /**
-     * D38 (CPA, 2026-07-24) — an inventory-carrying taxpayer cannot keep
-     * cash-basis books, so the combination is REFUSED at the stock ledger.
+     * D38 (draft answers 2026-07-24; licensed sign-off pending) — an
+     * inventory-carrying taxpayer cannot keep cash-basis books, so the
+     * combination is REFUSED at the stock ledger.
      *
      * This test previously asserted the opposite: that the cost parked in
      * Deferred COGS while revenue waited for collection. That was a
-     * carefully-built answer to a question the CPA has since ruled out of
-     * existence, and the honest thing is to assert the refusal rather than
-     * keep testing a mode nobody may use.
+     * carefully-built answer to a question the research draft has since ruled
+     * out of existence, and the honest thing is to assert the refusal rather
+     * than keep testing a mode nobody may use.
      */
     public function test_cash_basis_and_inventory_cannot_coexist(): void
     {

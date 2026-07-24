@@ -52,8 +52,9 @@
             {{-- 1. VAT-registered statement + seller TIN incl. branch code --}}
             <div class="bold">{{ $header['tin'] }}</div>
             {{--
-              ACCN on the FACE of the document — CPA-confirmed required
-              (D35, 2026-07-24). It also prints in the footer as part of the
+              ACCN on the FACE of the document — required per the draft
+              answers (D35; licensed sign-off pending). It also prints in
+              the footer as part of the
               RMC 5-2021 Annex B item 4 generation block, but that block is a
               different obligation (software/user/timestamp on every report);
               this one identifies the registered system to whoever holds the

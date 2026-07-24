@@ -109,8 +109,8 @@ class StockLedger
 
     /** On-hand at one location, from the cache. */
     /**
-     * D38 (CPA, 2026-07-24) — an inventory-carrying taxpayer cannot keep
-     * cash-basis books.
+     * D38 (draft answers 2026-07-24; licensed sign-off pending) — an
+     * inventory-carrying taxpayer cannot keep cash-basis books.
      *
      * The guard lives HERE rather than at item creation because this is the
      * one place every movement passes through: a receipt, a sale, a count
@@ -133,7 +133,7 @@ class StockLedger
         if (! $this->basisAllowsInventory) {
             throw new InventoryException(
                 'This tenant keeps cash-basis books, and a business carrying inventory cannot '
-                .'(D38 — CPA, 2026-07-24). Move it to the accrual basis before recording stock.'
+                .'(D38). Move it to the accrual basis before recording stock.'
             );
         }
     }

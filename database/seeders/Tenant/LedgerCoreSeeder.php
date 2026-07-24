@@ -57,7 +57,7 @@ class LedgerCoreSeeder extends Seeder
             ['2000', 'Accounts Payable', 'liability', 'credit', false, false],
             ['2100', 'Output VAT', 'liability', 'credit', false, false],
             ['2150', 'Withholding Tax Payable', 'liability', 'credit', false, false], // 1601EQ
-            // D32 (CPA, 2026-07-24): a percentage-tax registrant files 2551Q
+            // D32 (draft answers 2026-07-24): a percentage-tax registrant files 2551Q
             // and needs somewhere to accrue it. An 8% elector files NEITHER
             // 2551Q nor this — the 8% is in lieu of percentage tax — so the
             // return set follows the date-effective `tax_regimes` row, not
@@ -187,17 +187,31 @@ class LedgerCoreSeeder extends Seeder
             ['code' => 'IV12', 'kind' => 'input_vat', 'rate_bp' => 1200, 'account_id' => $accountId['1200'], 'default_atc' => null, 'effective_from' => '2024-01-01', 'effective_to' => null],
         ]);
 
-        // --- expanded-withholding rates (D25, CPA-confirmed 2026-07-24) ---
+        // --- expanded-withholding rates (D25, research draft — licensed
+        //     CPA sign-off still pending; see docs/cpa-briefing §4) ---------
         //
-        // These are the seven payment types the CPA confirmed (fourteen rows
+        // SOURCE HONESTY: these rates come from the AI-assisted research draft
+        // (docs/cpa-briefing-draft-answers.md), NOT from a licensed Philippine
+        // CPA. That document's own §4 lists the seeded ATC table as an item a
+        // practitioner must still confirm against the current eBIRForms
+        // library. So every row here is a researched default awaiting a
+        // confirm-tick, not settled fact.
+        //
+        // These are the seven payment types the draft answered (fourteen rows
         // — each splits individual/juridical). They are NOT the whole ATC
         // library, and the gap is deliberate: `TaxResolver` throws
         // rather than guess, so a payment type that is not here fails loudly
         // at posting instead of withholding a made-up rate.
         //
-        // Commissions/brokerage is WI515/WC515. Our earlier draft had
-        // WI139/WI140 and WC139/WC140 — wrong, and corrected by the CPA. It
-        // never reached a calculation because this table was empty.
+        // Commissions: WI515/WC515 is a FLAT 10% pair, narrowly scoped to
+        // brokers/agents (customs, insurance, stock, real-estate, immigration,
+        // commercial) and agents of professional entertainers. GENERIC
+        // non-employee commissions are professional fees → WI010/WI011, NOT
+        // these. Two earlier errors, both corrected here: the first draft used
+        // WI139/WI140, WC139/WC140 (wrong codes), and the follow-up seeded
+        // WI515 at 5% with the professional-fee sworn-declaration logic (wrong
+        // too — this code is flat 10%, no declaration gate). Scope AND rate
+        // are on the reviewer's confirm list.
         //
         // Not seeded on purpose: WC157/WI157 and WC640/WI640 are GOVERNMENT
         // payment codes. Auto-assigning them to private purchases fails
@@ -230,8 +244,8 @@ class LedgerCoreSeeder extends Seeder
             ['WC158', 'TWA → local supplier of GOODS, juridical', 'juridical', 100, null, false, 'RR 11-2018 (TWA only)'],
             ['WI160', 'TWA → local supplier of SERVICES, individual', 'individual', 200, null, false, 'RR 11-2018 (TWA only)'],
             ['WC160', 'TWA → local supplier of SERVICES, juridical', 'juridical', 200, null, false, 'RR 11-2018 (TWA only)'],
-            ['WI515', 'Commissions/brokerage — individual', 'individual', 500, null, true, 'RR 11-2018 (CPA-confirmed 2026-07-24)'],
-            ['WC515', 'Commissions/brokerage — juridical', 'juridical', 1000, null, false, 'RR 11-2018 (CPA-confirmed 2026-07-24)'],
+            ['WI515', 'Broker/agent commissions (brokers, entertainer agents) — individual', 'individual', 1000, null, false, 'RR 11-2018 — research draft, reviewer to confirm scope + rate'],
+            ['WC515', 'Broker/agent commissions — juridical', 'juridical', 1000, null, false, 'RR 11-2018 — research draft, reviewer to confirm scope + rate'],
         ]));
 
         // --- inventory reference data (08 §1) -----------------------------

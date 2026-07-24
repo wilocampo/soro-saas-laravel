@@ -61,20 +61,27 @@
 - **EOPT: the "Invoice" is the single principal VAT document (goods + services); OR is supplementary** — dropped the old Sales-Invoice-vs-Official-Receipt split; use a `document_class` field. (`03`.)
 - The "RR 9-2009 prima-facie line-delete" claim was **wrong**; the append-only rule is grounded in **RMC 5-2021 Annex B item 10**.
 
-## D24–D41 — CPA sign-off ANSWERED (2026-07-24)
+## D24–D42 — CPA sign-off: research-draft answers recorded (2026-07-24)
 
-All 23 questions in [`../cpa-briefing.md`](../cpa-briefing.md) are answered. **These decisions supersede the drafted treatments; where a decision contradicts an earlier ADR or spec section, this section wins.** The verdict table as received is in the briefing; below is only what the build must do about it.
+All 23 questions in [`../cpa-briefing.md`](../cpa-briefing.md) have **draft answers** in [`../cpa-briefing-draft-answers.md`](../cpa-briefing-draft-answers.md). **Read that document's status line before treating any of this as settled:** the answers are AI-assisted research, *not* a licensed Philippine CPA's sign-off, and its §4 lists items a practitioner must still decide (the seeded ATC table, the chart review, the mid-year ₱3M catch-up rule, SLSP credit-note presentation, the RMO 21-2020 notice window, and counsel's erasure nod). We build against these drafts because they are well-sourced and let the reviewer *confirm rather than compose* — but nothing below is "CPA-confirmed", and code/comments must not claim it is.
+
+**These decisions supersede the earlier drafted treatments; where a decision contradicts an earlier ADR or spec section, this section wins.** Below is only what the build must do about each.
 
 **D24 — VAT rounding: confirmed as built.** Per-line, half-up, VAT-inclusive prices back out the net so VAT is the remainder. No issuance prescribes a method — **consistency is the audited property**, so the policy must be identical on screen, in the posting and in the return. `Money::taxOf()` is the single implementation; anything computing VAT elsewhere is a defect.
 
-**D25 — ATC table.** The seven drafted rows are confirmed with one correction: commissions/brokerage are **WI515 / WC515** (our WI139/WI140, WC139/WC140 guess was wrong). Seed those rows now; the full table loads from the **eBIRForms ATC library** — still to be supplied, and no rate may be invented in the meantime (`TaxResolver::atcRateBp()` continues to throw). WC157/WI157 and WC640/WI640 remain reserved for government payments.
+**D25 — ATC table.** The seven drafted payment types are answered; the full table still loads from the **eBIRForms ATC library** (not yet supplied), and no rate may be invented meanwhile (`TaxResolver::atcRateBp()` throws). WC157/WI157 and WC640/WI640 stay reserved for government payments. **Commissions took two corrections:** the codes are **WI515 / WC515** (not WI139/WI140, WC139/WC140), and they are a **flat 10% pair** narrowly scoped to brokers/agents and entertainer agents — the first fix wrongly seeded WI515 at 5% with the professional-fee sworn-declaration logic. **Generic** non-employee commissions are professional fees → WI010/WI011. Both the code set and this scope are on the reviewer's confirm list (`draft-answers §2 Q2, §4`).
 
 **D26 — Sworn declarations: prospective, never retroactive.** Absent or expired ⇒ the higher rate, from that date forward. Good-faith reliance on the declaration on file is the design of RR 11-2018; documents already posted are not re-rated.
 
 **D27 — TWA effective dating.** The obligation begins on the **1st of the month following publication**, and de-listing likewise takes effect by publication ⇒ `company_profile` needs a **`twa_effective_to`** to pair with `twa_effective_from`. TWA rates apply iff `date >= from AND (to IS NULL OR date <= to)`. Status remains conferred, never computed.
 
-**D28 — Output VAT accrues at invoice date for goods AND services (RR 3-2024), regardless of the tenant's book basis.** Two riders: (a) service receivables outstanding at the EOPT transition need the transitional treatment; (b) the EOPT **uncollected-receivables output-VAT credit** must be modelled.
-⚠️ **This contradicts shipped code.** `SalesInvoicePostingRule` on the cash basis returns a draft with **no output-VAT line**, and `PaymentPostingRule` recognises it at collection — understating every 2550Q for a cash-basis VAT-registered tenant. The fix is blocked on **FQ1** (the briefing's follow-up): recognising VAT at invoice needs a balancing debit, and a cash-basis client has no A/R control account. Do not guess; the three candidate treatments are in the briefing.
+**D28 — Output VAT is invoice-basis by law for goods AND services (RR 3-2024), independent of the tenant's book basis — and FQ1 is resolved.** The follow-up question ("what balances a cash-basis output-VAT line at invoice?") had a false premise. The draft answer (Q5, Q18, Q22 finding #6) is that **the cash-basis GL does NOT book output VAT at invoice at all** — it recognises it at collection, as cash-basis books should — while the **2550Q, sales journal and SLSP are generated from the invoice subledger by invoice date**, never from the GL. The two legitimately diverge by the credit period and reconcile over time.
+
+Consequences for the build:
+- **The shipped posting rule is CORRECT, not defective.** `SalesInvoicePostingRule` returning an empty cash-basis draft and `PaymentPostingRule` recognising output VAT at collection is the right GL behaviour. My earlier "shipped defect / recommend prohibit cash+VAT" note (and FQ1's three candidate entries) is withdrawn — none is needed. **cash + VAT-registered is a PERMITTED combination** (only cash + inventory is barred, D38).
+- **The risk moves to the not-yet-built 2550Q generator**, which must read the invoice subledger by invoice date. This is now a hard invariant recorded in [`../fixtures/scenarios.md`](../fixtures/scenarios.md) (S3/S4) so an implementer cannot wire the return to the GL and file every cash-basis client's VAT a quarter late.
+- **A VAT-vs-GL reconciliation report** ships for cash-basis VAT tenants (the analogue of D29's withholding reconciliation), and onboarding **advises** — does not force — accrual for VAT-registered tenants, since the divergence is permanent though explainable.
+- Two data items still to build (Phase 4 / onboarding, not blocking): the **transitional** rule for pre-EOPT service receivables billed-but-uncollected (an onboarding note — those carry residual collection-basis VAT outside Soro), and the EOPT **uncollected-receivables output-VAT credit** (RR 3-2024 §4.110-9) — capture per-invoice agreed-credit-period, claimed-credit flag and recovery add-back now even though the return line ships later.
 
 **D29 — Withholding follows the payable date, not the book basis, and is extracted from the SUBLEDGER.** RR 4-2024's test is when the liability becomes **due, demandable or legally enforceable**. The 0619-E / 1601-EQ / QAP / 1604-E extract reads the **vendor-bills subledger**, never the GL — so a cash-basis tenant's returns are right even though its ledger recognises the expense later. A GL-vs-return reconciliation ships alongside.
 
@@ -86,7 +93,7 @@ All 23 questions in [`../cpa-briefing.md`](../cpa-briefing.md) are answered. **T
 
 **D33 — Retention: ten years stays, as policy.** The legal floor is five (RR 7-2024); the pending-case extension is confirmed and our legal-hold flag matches the rule. Nothing changes.
 
-**D34 — Three additions to the CAS control set** (`03` §2, beyond what D-earlier shipped): a **user-access/activity log** (logins, failures, permission changes — distinct from the transaction audit log), a **printable audit-trail report**, and a **registration documentation package** generator for the AC submission.
+**D34 — Four additions to the CAS control set** (`03` §2, beyond what shipped): a **user-access/activity log** (logins, failures, permission changes — distinct from and not necessarily hash-chained like the transaction audit log, but append-only and reportable), a **printable audit-trail report** (filterable by user/date/document, carrying the mandatory header block — not just read access to a table), a **registration documentation package** generator for the AC submission (system description, process flow, sworn statement of books/reports/serial ranges), and a **documented backup/restore procedure** (the capability exists per spec 10; the client-facing one-pager does not). Clarification for the reviewer's copy: a **demo/sandbox tenant** for BIR evaluation or training is a distinct empty database, **not** a "training mode" suppression feature — say so explicitly, because "no training mode" can confuse an examiner who expects to be given a demo environment.
 
 **D35 — The ACCN prints on the face of issued documents** (required). Separately: **"gapless" is our word, not BIR's** — the actual rule is sequential, unique and non-reusable. Keep the behaviour exactly as built; remove the word from validation messages and customer-facing copy.
 
@@ -101,20 +108,23 @@ All 23 questions in [`../cpa-briefing.md`](../cpa-briefing.md) are answered. **T
 
 **D40 — Cash flow (v2): indirect method.** Confirms D23's assumption. The per-account operating/investing/financing classification arrives with the chart review.
 
-**D41 — DPA ground confirmed: Sec. 12(c), processing necessary for compliance with a legal obligation.** Erasure is not absolute and is refusable for records the BIR mandates we keep. Final customer-facing wording still routes to counsel.
+**D41 — DPA ground confirmed: Sec. 12(c), processing necessary for compliance with a legal obligation.** Erasure is not absolute and is refusable for records the BIR mandates we keep. Counsel to confirm one boundary: the refusal covers data *forming part of the mandated records* only — personal data held outside them (marketing lists, former-user portal accounts) still honours erasure, and once retention lapses without a hold the DPA *requires* disposal. Final customer-facing wording still routes to counsel.
+
+**D42 — Year-end close is entity-type-aware in naming only.** Income Summary → Retained Earnings is confirmed for corporations; the posting rule is unchanged. For a **sole proprietorship** the same mechanics close **Drawings → Owner's Capital** and **Income Summary → Owner's Capital** (not "Retained Earnings"). Make the equity-account *names* entity-type-aware in the chart seed; book-tax differences (MCIT, NOLCO) stay outside the books as ITR working-paper items.
 
 **Q15 stays flagged, nothing load-bearing.** The threshold likely sits at Sec. 109(CC) post-CREATE and Sec. 110(D) is plausibly the EOPT uncollected-receivables insert — to be confirmed against the consolidated text. No computation depends on either cite.
 
 ### Still outstanding after this round
-1. **The eBIRForms ATC library** (D25) — blocks the full withholding table; the seven confirmed rows can seed now.
-2. **The reviewed chart of accounts + activity classification** (D36, D40).
-3. **FQ1** — the balancing debit for cash-basis output VAT (D28). Blocks the defect fix.
+1. **The eBIRForms ATC library** (D25) — blocks the full withholding table; the confirmed rows (incl. the corrected WI515/WC515 at flat 10%) can seed now, but scope/rate is a reviewer-confirm item.
+2. **The reviewed chart of accounts + activity classification** (D36, D40) — plus the six structural corrections in `draft-answers §2 Q14` when it lands.
+3. **FQ1 is RESOLVED** (D28): cash + VAT-registered is permitted; the GL stays cash-basis and the 2550Q reads the invoice subledger by invoice date. No posting-rule change; the constraint lives in the future return generator and is recorded as a fixture invariant.
+4. **Licensed sign-off** on the items in `draft-answers §4` (the seeded ATC table, the chart, the mid-year ₱3M catch-up rule, SLSP credit-note presentation, the RMO 21-2020 notice window, counsel's erasure nod).
 
 ---
 
-## Accountant / CPA sign-off list (ANSWERED 2026-07-24 — retained for traceability)
+## Accountant / CPA sign-off list (draft answers recorded 2026-07-24 — retained for traceability)
 
-> Every item below is resolved by **D24–D41 above**, which supersede it. The list is kept so an auditor can trace each question to its answer. The packaged version sent to the accountant is [`../cpa-briefing.md`](../cpa-briefing.md).
+> Every item below has a **draft answer** in **D24–D42 above** (sourced from [`../cpa-briefing-draft-answers.md`](../cpa-briefing-draft-answers.md), which is research, not a licensed CPA's sign-off). The list is kept so an auditor can trace each question to its answer and so the practitioner can confirm-tick rather than compose. The packaged question set is [`../cpa-briefing.md`](../cpa-briefing.md).
 
 - **Cash-flow activity classification** (D23): the operating/investing/financing tag for every account in the chart, before any Statement of Cash Flows is built.
 - Chart-of-accounts structure + BIR field mappings (`bir_tax_type`, `bir_atc_code`, `bir_fs_line`) and the full ATC/alphalist code set.
