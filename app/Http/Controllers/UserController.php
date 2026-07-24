@@ -14,16 +14,13 @@ class UserController extends Controller
 {
     public function index(): Response
     {
-        $query = User::with(['roles', 'tenant']);
-
-        // If we're in a tenant context, filter by tenant
-        if (currentTenant()) {
-            $query->where('tenant_id', currentTenant()->id);
-        }
-        // If we're in landlord context, show all users
-        else {
-            // Show all users with their tenants
-        }
+        // DB-per-tenant: inside a tenant, the `users` table IS that tenant's
+        // users — there is no `tenant_id` column to filter on, and asking for
+        // one is a 500. (`users.tenant_id` is landlord-only scaffolding left
+        // from the abandoned shared-database design.)
+        $query = currentTenant()
+            ? User::with('roles')->where('is_system', false)
+            : User::with(['roles', 'tenant']);
 
         $users = $query->paginate(10);
         $roles = Role::all();
@@ -61,12 +58,9 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ];
 
-        // Set tenant_id based on context
-        if (currentTenant()) {
-            // In tenant context, use current tenant
-            $userData['tenant_id'] = currentTenant()->id;
-        } else {
-            // In landlord context, use provided tenant_id or null
+        // Only the landlord `users` table has a tenant_id; inside a tenant DB
+        // the database itself is the scope (see index()).
+        if (! currentTenant()) {
             $userData['tenant_id'] = $request->tenant_id;
         }
 
@@ -82,7 +76,7 @@ class UserController extends Controller
 
     public function show(User $user): Response
     {
-        $user->load(['roles', 'tenant']);
+        $user->load(currentTenant() ? ['roles'] : ['roles', 'tenant']);
 
         return Inertia::render('Users/Show', [
             'user' => $user,
