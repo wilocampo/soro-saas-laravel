@@ -11,7 +11,9 @@ import Select from 'primevue/select';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
-    statement: { type: Object, required: true },
+    // Null when the tenant has no customers yet — the page renders an empty
+    // state instead of erroring, because this is reachable from the menu.
+    statement: { type: Object, default: null },
     customers: { type: Array, required: true },
     partnerId: { type: Number, required: true },
     from: { type: String, required: true },
@@ -47,6 +49,21 @@ const BUCKETS = [
 
 <template>
     <ReportShell
+        v-if="!statement"
+        title="Statement of Account"
+        subtitle="No customers yet"
+        :header="header"
+        export-route="reports.soa"
+    >
+        <EmptyState
+            icon="pi pi-id-card"
+            title="No customers yet"
+            hint="A statement of account is per customer. Add one under Customers & vendors, then come back."
+        />
+    </ReportShell>
+
+    <ReportShell
+        v-else
         title="Statement of Account"
         :subtitle="statement.partner.registered_name"
         :header="header"

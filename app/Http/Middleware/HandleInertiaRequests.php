@@ -35,6 +35,16 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // The navigation has to know which half of the app it is in:
+            // landlord routes (/tenants, /users, /settings) and tenant routes
+            // (/onboarding, /tenant-users, the whole ledger) are different
+            // route groups against different databases. Offering a landlord
+            // link inside a tenant is a 500, because the landlord tables are
+            // not in the tenant's database.
+            'tenancy' => fn () => [
+                'isTenant' => currentTenant() !== null,
+                'name' => currentTenant()?->name,
+            ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

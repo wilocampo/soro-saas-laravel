@@ -108,10 +108,14 @@ class ReportController extends Controller
         $partnerId = (int) ($request->integer('partner_id') ?: ($customers->first()->id ?? 0));
         [$from, $to] = $this->range($request);
 
-        abort_if($partnerId === 0, 404, 'No customers exist yet.');
-
+        // A statement is per customer, so with none on file there is nothing
+        // to render. This used to abort 404 — fine when the only way here was
+        // a hand-typed URL, wrong now that it is a permanent menu item: a new
+        // tenant clicking it would meet an error page rather than an empty one.
         return Inertia::render('Reports/StatementOfAccount', [
-            'statement' => app(StatementOfAccount::class)->forCustomer($partnerId, $from, $to),
+            'statement' => $partnerId === 0
+                ? null
+                : app(StatementOfAccount::class)->forCustomer($partnerId, $from, $to),
             'customers' => $customers,
             'partnerId' => $partnerId,
             'from' => $from,
