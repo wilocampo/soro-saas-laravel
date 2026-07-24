@@ -307,9 +307,8 @@ class InventoryPostingTest extends LedgerTestCase
      * books — so the test could only ever have been made to pass by
      * disabling the guard it now contradicts.
      *
-     * The Deferred COGS branch of `CostOfSales` and account 1450 are dead
-     * for the same reason and are scheduled for removal. They are left in
-     * place for now so the removal is one reviewable change rather than
-     * noise inside this one.
+     * The Deferred COGS branch of `CostOfSales`, its `deferred` parameter,
+     * the payment rule's release, account 1450 and the `deferred_cogs` role
+     * have since been removed — this guard is what makes that safe.
      */
 }

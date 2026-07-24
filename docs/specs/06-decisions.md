@@ -102,7 +102,7 @@ Consequences for the build:
 **D37 — Cutover: fiscal-year start strongly preferred**, any period start permitted with an explicit warning the user must acknowledge. OBE-as-plug is confirmed standard.
 
 **D38 — The cash basis is narrower than we assumed.** It is legitimate only for a genuine cash-basis **service** business. Two hard consequences: **VAT remains invoice-basis regardless of book basis** (see D28), and **an inventory-carrying tenant cannot be on the cash basis** — enforce at settings level.
-⚠️ This retires the Phase-2b **Deferred COGS** path (account 1450, `CostOfSales::lines(..., deferred: true)`), which existed solely to serve cash-basis inventory clients. The guard is the fix; the branch is dead code pending removal.
+This retired the Phase-2b **Deferred COGS** path (account 1450, `CostOfSales`'s `deferred` branch, the payment rule's release, the `deferred_cogs` role), which existed solely to serve cash-basis inventory clients. **Removed** — the `StockLedger` guard is what makes the removal safe.
 
 **D39 — Inventory costing and spoilage.** Weighted average is fine, is **disclosed in the FS/ITR**, and **a change of method requires prior BIR consent** ⇒ the costing method locks at go-live and may only change against a recorded consent reference. Spoilage/shrinkage is deductible only through the **RMO 21-2020 destruction process** ⇒ a write-off needs a destruction record (application, schedule, BIR witness / certificate of deduction) before it counts as deductible, and the shrinkage report must separate documented from undocumented losses.
 

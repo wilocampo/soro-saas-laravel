@@ -15,17 +15,14 @@ use Illuminate\Support\Facades\DB;
  *  1. The item is locked (`FOR UPDATE`) while its average is read, so a
  *     concurrent receipt cannot move the average between the figure that
  *     lands in the journal and the figure the stock movement records.
- *  2. `cogs_centavos` is captured on the invoice LINE. Under cash basis
- *     recognition happens at collection — possibly months later, at a
- *     different average — and the cost that must be booked is the one that
- *     applied to the goods actually shipped.
+ *  2. `cogs_centavos` is captured on the invoice LINE, so a later reversal
+ *     books the cost the goods actually left at, not today's average.
  *
- * **Basis and the tie-out.** Inventory falls when the goods leave, in both
- * bases, or the stock subledger stops tying to the GL. What differs is
- * where the cost lands: accrual books it straight to COGS; cash books it to
- * **Deferred COGS** (an asset) and the payment rule moves it to COGS when
- * revenue is recognised. That keeps `inventory:verify` exact in both bases
- * without deferring the asset movement itself.
+ * **Basis.** Inventory is accrual-only: a tenant carrying stock cannot keep
+ * cash-basis books (D38), so the cost always books straight to COGS in the
+ * same entry as the revenue. (Phase 2b briefly parked cash-basis cost in a
+ * Deferred COGS holding account; that path was removed once D38 barred the
+ * combination that needed it.)
  */
 class CostOfSales
 {
@@ -68,12 +65,12 @@ class CostOfSales
     }
 
     /**
-     * The journal lines for a sale's cost side.
+     * The journal lines for a sale's cost side: Dr COGS per item, Cr Inventory.
      *
      * @param  array<int, array{item_id:int, location_id:int, qty:string, cogs_centavos:int}>  $costs
      * @return list<JournalLineDraft>
      */
-    public function lines(array $costs, PostingContext $context, bool $deferred): array
+    public function lines(array $costs, PostingContext $context): array
     {
         $total = array_sum(array_column($costs, 'cogs_centavos'));
 
@@ -81,7 +78,6 @@ class CostOfSales
             return [];
         }
 
-        $debitRole = $deferred ? 'deferred_cogs' : 'cogs';
         $lines = [];
 
         foreach ($costs as $cost) {
@@ -90,9 +86,9 @@ class CostOfSales
             }
 
             $lines[] = new JournalLineDraft(
-                accountId: $this->accountFor($cost['item_id'], $debitRole, $context),
+                accountId: $this->cogsAccountFor($cost['item_id'], $context),
                 debitCentavos: $cost['cogs_centavos'],
-                memo: $deferred ? 'Deferred cost of goods sold' : 'Cost of goods sold',
+                memo: 'Cost of goods sold',
             );
         }
 
@@ -107,17 +103,9 @@ class CostOfSales
         return $lines;
     }
 
-    /**
-     * The item's own COGS account when it has one; the role otherwise. The
-     * deferred account is deliberately NOT per item — it is a holding
-     * account, and splitting it would make the later reclass ambiguous.
-     */
-    private function accountFor(int $itemId, string $role, PostingContext $context): int
+    /** The item's own COGS account when it has one; the COGS role otherwise. */
+    private function cogsAccountFor(int $itemId, PostingContext $context): int
     {
-        if ($role === 'deferred_cogs') {
-            return $context->accounts->id('deferred_cogs');
-        }
-
         $itemAccount = DB::table('items')->where('id', $itemId)->value('cogs_account_id');
 
         return $itemAccount === null ? $context->accounts->id('cogs') : (int) $itemAccount;

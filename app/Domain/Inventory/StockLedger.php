@@ -118,11 +118,10 @@ class StockLedger
      * creation would still let a tenant that was switched to cash basis
      * afterwards keep moving the stock it already had.
      *
-     * We built the opposite assumption in Phase 2b — the Deferred COGS path
-     * (`CostOfSales::lines(..., deferred: true)`, account 1450) existed to
-     * serve exactly this combination. The CPA retired it, so that branch is
-     * now unreachable and is scheduled for removal rather than left looking
-     * like a supported mode.
+     * We built the opposite assumption in Phase 2b — a Deferred COGS path
+     * (account 1450) existed to serve exactly this combination. The draft
+     * answers retired it, and the path has since been removed; this guard is
+     * what makes its removal safe.
      */
     private function assertBasisSupportsInventory(): void
     {

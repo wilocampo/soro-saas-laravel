@@ -187,8 +187,10 @@ class PaymentPostingRule implements PostingRule
     private function recognitionLines(Payment $payment, PostingContext $context, PartyRef $party, bool $isReceipt): array
     {
         // Unapplied cash is handled by depositLines(); here we only expand
-        // what the payment actually settled.
-        $lines = $this->deferredCostLines($payment, $context, $isReceipt);
+        // what the payment actually settled. There is no cost side to
+        // recognise: a cash-basis tenant cannot hold inventory (D38), so a
+        // cash-basis sale is always services-only.
+        $lines = [];
 
         foreach ($payment->allocations as $allocation) {
             $components = $this->componentsFor($allocation->allocatable_type, (int) $allocation->allocatable_id, $context);
@@ -219,65 +221,6 @@ class PaymentPostingRule implements PostingRule
         }
 
         return $lines;
-    }
-
-    /**
-     * Cash basis, goods: the invoice already moved inventory into Deferred
-     * COGS when the goods shipped (08 §2). Collection is what turns that
-     * held cost into an expense, alongside the revenue it belongs with —
-     * matching, which is the whole point of deferring it rather than
-     * expensing at shipment.
-     *
-     * Pro-rated for a partial collection: recognise the same fraction of the
-     * cost as of the revenue.
-     *
-     * @return list<JournalLineDraft>
-     */
-    private function deferredCostLines(Payment $payment, PostingContext $context, bool $isReceipt): array
-    {
-        if (! $isReceipt) {
-            return [];   // only a sale defers cost
-        }
-
-        $recognised = 0;
-
-        foreach ($payment->allocations as $allocation) {
-            if ($allocation->allocatable_type !== 'sales_invoice') {
-                continue;
-            }
-
-            $invoice = SalesInvoice::with('lines')->find($allocation->allocatable_id);
-
-            if ($invoice === null) {
-                continue;
-            }
-
-            $cost = (int) $invoice->lines->sum('cogs_centavos');
-            $total = (int) $invoice->total_centavos;
-
-            if ($cost === 0 || $total === 0) {
-                continue;
-            }
-
-            $recognised += (int) round($cost * ((int) $allocation->applied_centavos) / $total);
-        }
-
-        if ($recognised === 0) {
-            return [];
-        }
-
-        return [
-            new JournalLineDraft(
-                accountId: $context->accounts->id('cogs'),
-                debitCentavos: $recognised,
-                memo: 'Cost of goods sold (recognized at collection)',
-            ),
-            new JournalLineDraft(
-                accountId: $context->accounts->id('deferred_cogs'),
-                creditCentavos: $recognised,
-                memo: 'Deferred cost released',
-            ),
-        ];
     }
 
     /**
