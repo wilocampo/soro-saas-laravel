@@ -35,7 +35,9 @@ php artisan serve                  # http://soro.local:8000
 
 *Proves the BIR registration details that print on every document are captured, and that go-live is gated on them.*
 
-Sign in as owner → **Onboarding**. Enter registered name, address, TIN + branch, the ACCN and its issue date, then the NPC/DPA attestation and a named DPO.
+Sign in as owner → sidebar **Get started → Onboarding & BIR profile**. Enter registered name, address, TIN + branch, the ACCN and its issue date, then the NPC/DPA attestation and a named DPO.
+
+> Pull the latest and run `npm run build` before testing. Until commit `ac0cabb` the sidebar was the original SaaS-starter menu — it had no link to onboarding or any accounting module, and its "Tenants" entry 500'd from inside a tenant.
 
 Sample: `Demo Trading Corp.` · TIN `123-456-789` / branch `000` · classification Small · ACCN `ACCN-2026-000123` · DPO `dpo@demo.ph`
 
@@ -59,7 +61,7 @@ Sample: `Demo Trading Corp.` · TIN `123-456-789` / branch `000` · classificati
 
 **Expected** — removing a partner **deactivates** it; posted documents reference it and the books are append-only.
 
-> Create the customer before opening **Reports → Statement of Account**: with no customers on file that page deliberately 404s ("No customers exist yet") rather than rendering an empty statement.
+> **Statement of Account** needs a customer — with none on file it renders an empty state pointing back here. (It used to 404: acceptable when the only route there was a typed URL, wrong once it became a menu item.)
 
 ---
 
