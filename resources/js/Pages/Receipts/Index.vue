@@ -23,16 +23,16 @@ const formatDate = (value) =>
             <AppPageHeader
                 title="Goods receipts"
                 subtitle="Received goods credit GRNI until the supplier's bill arrives"
-            >
-                <template #actions>
-                    <Link :href="route('receipts.create')">
-                        <Button label="Receive stock" icon="pi pi-plus" severity="success" />
-                    </Link>
-                </template>
-            </AppPageHeader>
+            />
         </template>
 
         <div class="card">
+            <div class="mb-4 flex justify-end">
+                <Link :href="route('receipts.create')">
+                    <Button label="Receive stock" icon="pi pi-plus" severity="success" />
+                </Link>
+            </div>
+
             <DataTable :value="receipts.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">
                 <template #empty>
                     <EmptyState icon="pi pi-box" title="Nothing received yet" hint="Deliveries appear here once posted." />

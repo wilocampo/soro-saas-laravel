@@ -130,16 +130,13 @@ const formatTin = (partner) =>
             <AppPageHeader
                 title="Customers and vendors"
                 subtitle="A missing or malformed TIN on an invoice costs the buyer its input-VAT claim"
-            >
-                <template #actions>
-                    <Button label="New partner" icon="pi pi-plus" severity="success" @click="openCreate" />
-                </template>
-            </AppPageHeader>
+            />
         </template>
 
         <div class="card">
-            <div class="mb-4">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <SelectButton v-model="role" :options="ROLES" optionLabel="label" optionValue="value" />
+                <Button label="New partner" icon="pi pi-plus" severity="success" @click="openCreate" />
             </div>
 
             <DataTable :value="partners.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">

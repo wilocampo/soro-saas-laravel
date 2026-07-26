@@ -37,11 +37,7 @@ const submit = () => form.post(route('counts.store'), { onSuccess: () => (dialog
             <AppPageHeader
                 title="Stock counts"
                 subtitle="The snapshot freezes when counting starts, so sales during the count are not shrinkage"
-            >
-                <template #actions>
-                    <Button label="Start a count" icon="pi pi-plus" severity="success" @click="dialog = true" />
-                </template>
-            </AppPageHeader>
+            />
         </template>
 
         <Message v-if="expiring.length" severity="warn" class="mb-4" :closable="false">
@@ -55,6 +51,10 @@ const submit = () => form.post(route('counts.store'), { onSuccess: () => (dialog
         </Message>
 
         <div class="card">
+            <div class="mb-4 flex justify-end">
+                <Button label="Start a count" icon="pi pi-plus" severity="success" @click="dialog = true" />
+            </div>
+
             <DataTable :value="counts.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">
                 <template #empty>
                     <EmptyState icon="pi pi-list-check" title="No counts yet" hint="Start one when you walk the shelves." />

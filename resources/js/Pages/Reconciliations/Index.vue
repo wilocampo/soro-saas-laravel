@@ -49,14 +49,14 @@ const submit = () => {
             <AppPageHeader
                 title="Bank reconciliation"
                 subtitle="Mark what the bank has seen; what is left is in transit or outstanding"
-            >
-                <template #actions>
-                    <Button label="New reconciliation" icon="pi pi-plus" severity="success" @click="dialog = true" />
-                </template>
-            </AppPageHeader>
+            />
         </template>
 
         <div class="card">
+            <div class="mb-4 flex justify-end">
+                <Button label="New reconciliation" icon="pi pi-plus" severity="success" @click="dialog = true" />
+            </div>
+
             <DataTable :value="reconciliations" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">
                 <template #empty>
                     <EmptyState

@@ -39,17 +39,11 @@ const formatDate = (value) =>
 <template>
     <AuthenticatedLayout title="Invoices">
         <template #header>
-            <AppPageHeader title="Invoices" subtitle="The principal VAT document for goods and services (RR 7-2024)">
-                <template #actions>
-                    <Link :href="route('invoices.create')">
-                        <Button label="New invoice" icon="pi pi-plus" severity="success" />
-                    </Link>
-                </template>
-            </AppPageHeader>
+            <AppPageHeader title="Invoices" subtitle="The principal VAT document for goods and services (RR 7-2024)" />
         </template>
 
         <div class="card">
-            <div class="mb-4 flex items-center justify-between gap-3">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <Select
                     v-model="status"
                     :options="STATUSES"
@@ -58,9 +52,14 @@ const formatDate = (value) =>
                     placeholder="All statuses"
                     class="w-56"
                 />
-                <Link :href="route('reports.aging')" class="text-sm text-primary hover:underline">
-                    A/R aging →
-                </Link>
+                <div class="flex items-center gap-3">
+                    <Link :href="route('reports.aging')" class="text-sm text-primary hover:underline">
+                        A/R aging →
+                    </Link>
+                    <Link :href="route('invoices.create')">
+                        <Button label="New invoice" icon="pi pi-plus" severity="success" />
+                    </Link>
+                </div>
             </div>
 
             <DataTable :value="invoices.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">

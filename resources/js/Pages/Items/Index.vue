@@ -124,16 +124,13 @@ const belowReorder = (item) =>
 <template>
     <AuthenticatedLayout title="Items">
         <template #header>
-            <AppPageHeader title="Items" subtitle="Valued at moving weighted average — the same figure the balance sheet uses">
-                <template #actions>
-                    <Button label="New item" icon="pi pi-plus" severity="success" @click="openCreate" />
-                </template>
-            </AppPageHeader>
+            <AppPageHeader title="Items" subtitle="Valued at moving weighted average — the same figure the balance sheet uses" />
         </template>
 
         <div class="card">
-            <div class="mb-4">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <SelectButton v-model="type" :options="TYPES" optionLabel="label" optionValue="value" />
+                <Button label="New item" icon="pi pi-plus" severity="success" @click="openCreate" />
             </div>
 
             <DataTable :value="items.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">

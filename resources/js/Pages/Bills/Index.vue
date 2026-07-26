@@ -39,17 +39,11 @@ const formatDate = (value) =>
             <AppPageHeader
                 title="Vendor bills"
                 subtitle="Withholding accrues at the booking date, not at payment (RR 4-2024)"
-            >
-                <template #actions>
-                    <Link :href="route('bills.create')">
-                        <Button label="New bill" icon="pi pi-plus" severity="success" />
-                    </Link>
-                </template>
-            </AppPageHeader>
+            />
         </template>
 
         <div class="card">
-            <div class="mb-4 flex items-center justify-between gap-3">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <Select
                     v-model="status"
                     :options="STATUSES"
@@ -58,9 +52,14 @@ const formatDate = (value) =>
                     placeholder="All statuses"
                     class="w-56"
                 />
-                <Link :href="route('reports.aging', { kind: 'payables' })" class="text-sm text-primary hover:underline">
-                    A/P aging →
-                </Link>
+                <div class="flex items-center gap-3">
+                    <Link :href="route('reports.aging', { kind: 'payables' })" class="text-sm text-primary hover:underline">
+                        A/P aging →
+                    </Link>
+                    <Link :href="route('bills.create')">
+                        <Button label="New bill" icon="pi pi-plus" severity="success" />
+                    </Link>
+                </div>
             </div>
 
             <DataTable :value="bills.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">

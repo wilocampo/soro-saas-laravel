@@ -36,21 +36,20 @@ const formatDate = (value) =>
 <template>
     <AuthenticatedLayout title="Payments">
         <template #header>
-            <AppPageHeader title="Payments" subtitle="Collections and disbursements, with the tax withheld on either side">
-                <template #actions>
+            <AppPageHeader title="Payments" subtitle="Collections and disbursements, with the tax withheld on either side" />
+        </template>
+
+        <div class="card">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <SelectButton v-model="direction" :options="DIRECTIONS" optionLabel="label" optionValue="value" />
+                <div class="flex items-center gap-2">
                     <Link :href="route('payments.create', { direction: 'received' })">
                         <Button label="Collection" icon="pi pi-arrow-down" severity="success" />
                     </Link>
                     <Link :href="route('payments.create', { direction: 'paid' })">
                         <Button label="Disbursement" icon="pi pi-arrow-up" severity="warn" outlined />
                     </Link>
-                </template>
-            </AppPageHeader>
-        </template>
-
-        <div class="card">
-            <div class="mb-4">
-                <SelectButton v-model="direction" :options="DIRECTIONS" optionLabel="label" optionValue="value" />
+                </div>
             </div>
 
             <DataTable :value="payments.data" dataKey="id" class="p-datatable-sm" responsiveLayout="scroll">
