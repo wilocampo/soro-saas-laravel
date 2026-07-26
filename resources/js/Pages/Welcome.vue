@@ -188,19 +188,26 @@ const invariants = [
             <div class="shell nav__inner">
                 <a href="#top" class="brand" aria-label="Soro home">
                     <span class="brand__mark" aria-hidden="true">
-                        <svg viewBox="0 0 40 40" width="34" height="34">
+                        <svg viewBox="0 0 40 40" width="34" height="34" role="img" aria-label="Soro fox mark">
                             <defs>
-                                <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+                                <linearGradient id="soroTile" x1="0" y1="0" x2="1" y2="1">
                                     <stop offset="0" stop-color="#34d399" />
-                                    <stop offset="1" stop-color="#059669" />
+                                    <stop offset="1" stop-color="#047857" />
                                 </linearGradient>
                             </defs>
-                            <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#sg)" />
-                            <path d="M9 26 H31" stroke="#04140E" stroke-width="2.4" stroke-linecap="round" opacity="0.45" />
-                            <path d="M20 9 V27" stroke="#E9F7F0" stroke-width="2.4" stroke-linecap="round" />
-                            <path d="M12 15 H28" stroke="#E9F7F0" stroke-width="2.4" stroke-linecap="round" />
-                            <circle cx="12" cy="15" r="2.6" fill="#D8B25A" />
-                            <circle cx="28" cy="15" r="2.6" fill="#D8B25A" />
+                            <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#soroTile)" />
+                            <!-- fox head -->
+                            <path d="M9 11 L20 16 L31 11 L26 24.5 L20 30 L14 24.5 Z" fill="#F4F1E7" />
+                            <!-- origami fold, right side in shadow -->
+                            <path d="M20 16 L31 11 L26 24.5 L20 30 Z" fill="#E3DCC6" />
+                            <!-- inner-ear accents -->
+                            <path d="M9 11 L13.5 12.8 L11.7 16 Z" fill="#D8B25A" />
+                            <path d="M31 11 L26.5 12.8 L28.3 16 Z" fill="#B8923A" />
+                            <!-- eyes -->
+                            <path d="M15.2 18.6 L18 20.1" stroke="#0b3b2e" stroke-width="1.7" stroke-linecap="round" />
+                            <path d="M24.8 18.6 L22 20.1" stroke="#0b3b2e" stroke-width="1.7" stroke-linecap="round" />
+                            <!-- nose -->
+                            <path d="M20 27.8 L18.4 25.6 L21.6 25.6 Z" fill="#0b3b2e" />
                         </svg>
                     </span>
                     <span class="brand__word">Soro</span>
@@ -716,6 +723,7 @@ const invariants = [
     letter-spacing: -0.025em;
     margin: 0 0 2.4rem;
     max-width: 22ch;
+    color: #eef7f2;
 }
 .section__title--dark {
     color: #14261f;
@@ -792,6 +800,7 @@ const invariants = [
     line-height: 0.98;
     letter-spacing: -0.035em;
     margin: 0 0 1.5rem;
+    color: #f1f8f4;
 }
 .ink-accent {
     color: transparent;
@@ -1090,6 +1099,7 @@ const invariants = [
     font-size: 1.15rem;
     letter-spacing: -0.01em;
     margin: 0 0 0.55rem;
+    color: #eef7f2;
 }
 .card p {
     color: var(--muted);
@@ -1287,6 +1297,7 @@ const invariants = [
     font-weight: 600;
     font-size: 1.12rem;
     margin: 0 0 0.5rem;
+    color: #eef7f2;
 }
 .step p {
     color: var(--muted);
@@ -1346,6 +1357,7 @@ const invariants = [
     line-height: 1.05;
     margin: 0 auto 1rem;
     max-width: 18ch;
+    color: #f1f8f4;
 }
 .cta__inner p {
     color: var(--muted);

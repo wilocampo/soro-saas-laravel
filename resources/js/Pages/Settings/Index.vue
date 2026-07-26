@@ -1,5 +1,9 @@
 <template>
     <AuthenticatedLayout title="Settings">
+        <template #header>
+            <AppPageHeader title="Settings" subtitle="Business identity, appearance and branding." />
+        </template>
+
         <form @submit.prevent="submit" class="flex flex-col gap-6 max-w-4xl">
             <FormSection title="General" description="Business identity and contact details.">
                 <CRUDField
@@ -114,6 +118,7 @@
 
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import AppPageHeader from '@/components/AppPageHeader.vue';
 import ColorField from '@/components/ColorField.vue';
 import CRUDField from '@/components/CRUDField.vue';
 import FormSection from '@/components/FormSection.vue';
