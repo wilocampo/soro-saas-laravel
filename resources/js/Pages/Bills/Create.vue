@@ -270,16 +270,21 @@ const submit = () => {
                 </div>
 
                 <template #footer>
-                    <Button
-                        type="submit"
-                        label="Record bill"
-                        icon="pi pi-check"
-                        :loading="form.processing"
-                        :disabled="net <= 0"
-                    />
-                    <Link :href="route('bills.index')">
-                        <Button label="Cancel" severity="secondary" text type="button" />
-                    </Link>
+                    <span class="text-sm text-muted-color">
+                        Withholding is booked now, at the bill date, not when you pay (RR 4-2024).
+                    </span>
+                    <div class="ml-auto flex items-center gap-2">
+                        <Link :href="route('bills.index')">
+                            <Button label="Cancel" severity="secondary" text type="button" />
+                        </Link>
+                        <Button
+                            type="submit"
+                            label="Record bill"
+                            icon="pi pi-check"
+                            :loading="form.processing"
+                            :disabled="net <= 0"
+                        />
+                    </div>
                 </template>
             </FormSection>
         </form>

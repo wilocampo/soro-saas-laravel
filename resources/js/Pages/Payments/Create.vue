@@ -234,17 +234,22 @@ const submit = () => {
                 </Message>
             </div>
 
-            <div class="card flex items-center gap-3">
-                <Button
-                    type="submit"
-                    label="Post payment"
-                    icon="pi pi-check"
-                    :loading="form.processing"
-                    :disabled="settled <= 0 || unapplied < 0"
-                />
-                <Link :href="route('payments.index')">
-                    <Button label="Cancel" severity="secondary" text type="button" />
-                </Link>
+            <div class="card flex flex-wrap items-center gap-3">
+                <span class="text-sm text-muted-color">
+                    {{ isReceipt ? 'A collection: cash in, plus any creditable tax the customer withheld.' : 'A disbursement: cash out, less any tax withheld from the payee.' }}
+                </span>
+                <div class="ml-auto flex items-center gap-2">
+                    <Link :href="route('payments.index')">
+                        <Button label="Cancel" severity="secondary" text type="button" />
+                    </Link>
+                    <Button
+                        type="submit"
+                        label="Post payment"
+                        icon="pi pi-check"
+                        :loading="form.processing"
+                        :disabled="settled <= 0 || unapplied < 0"
+                    />
+                </div>
             </div>
         </form>
     </AuthenticatedLayout>

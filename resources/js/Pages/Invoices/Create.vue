@@ -254,19 +254,21 @@ const submit = () => {
                 </div>
 
                 <template #footer>
-                    <Button
-                        type="submit"
-                        label="Issue invoice"
-                        icon="pi pi-check"
-                        :loading="form.processing"
-                        :disabled="total <= 0"
-                    />
-                    <Link :href="route('invoices.index')">
-                        <Button label="Cancel" severity="secondary" text type="button" />
-                    </Link>
                     <span class="text-sm text-muted-color">
                         The serial number is drawn when the invoice posts, so a failed post burns none.
                     </span>
+                    <div class="ml-auto flex items-center gap-2">
+                        <Link :href="route('invoices.index')">
+                            <Button label="Cancel" severity="secondary" text type="button" />
+                        </Link>
+                        <Button
+                            type="submit"
+                            label="Issue invoice"
+                            icon="pi pi-check"
+                            :loading="form.processing"
+                            :disabled="total <= 0"
+                        />
+                    </div>
                 </template>
             </FormSection>
         </form>

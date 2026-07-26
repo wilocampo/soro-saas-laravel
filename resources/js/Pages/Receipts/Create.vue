@@ -354,19 +354,21 @@ const submit = () => {
             </Message>
 
             <div class="card flex flex-wrap items-center gap-3">
-                <Button
-                    type="submit"
-                    label="Post receipt"
-                    icon="pi pi-check"
-                    :loading="form.processing"
-                    :disabled="!form.lines.length || blockers > 0"
-                />
-                <Link :href="route('receipts.index')">
-                    <Button label="Cancel" severity="secondary" text type="button" />
-                </Link>
                 <span class="text-sm text-muted-color">
                     Posting debits Inventory and credits Goods Received Not Invoiced.
                 </span>
+                <div class="ml-auto flex items-center gap-2">
+                    <Link :href="route('receipts.index')">
+                        <Button label="Cancel" severity="secondary" text type="button" />
+                    </Link>
+                    <Button
+                        type="submit"
+                        label="Post receipt"
+                        icon="pi pi-check"
+                        :loading="form.processing"
+                        :disabled="!form.lines.length || blockers > 0"
+                    />
+                </div>
             </div>
         </form>
     </AuthenticatedLayout>
