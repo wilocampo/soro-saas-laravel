@@ -1,6 +1,5 @@
 <script setup>
 import AppPageHeader from '@/components/AppPageHeader.vue';
-import NotificationsWidget from '@/components/dashboard/NotificationsWidget.vue';
 import MoneyText from '@/components/MoneyText.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Link } from '@inertiajs/vue3';
@@ -197,7 +196,5 @@ const urgency = (days) => (days < 0 ? 'danger' : days <= 7 ? 'warn' : 'secondary
                 </div>
             </div>
         </template>
-
-        <NotificationsWidget />
     </AuthenticatedLayout>
 </template>
