@@ -3,6 +3,7 @@
 namespace App\Domain\Reports;
 
 use App\Domain\Documents\AgingService;
+use App\Domain\Ledger\Models\CompanyProfile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -35,8 +36,76 @@ class DashboardSummary
             'receivables' => $this->agingSnapshot($receivables),
             'payables' => $this->agingSnapshot($payables),
             'profit_and_loss' => $periodId === null ? null : $this->profitAndLoss($periodId),
+            'trend' => $periodId === null ? [] : $this->incomeExpenseTrend($periodId),
             'deadlines' => $this->deadlines($asOf),
             'period' => $periodId === null ? null : $this->period($periodId),
+            'setup' => $this->setupStatus(),
+        ];
+    }
+
+    /**
+     * Income and expenses per fiscal period, from the year's start through
+     * the current period. This is the dashboard chart, and like every other
+     * figure it is the SAME per-period income statement the reports draw, so
+     * the trend cannot say something the statements do not.
+     *
+     * @return list<array{period_no:int, label:string, income:int, expenses:int, net:int}>
+     */
+    private function incomeExpenseTrend(int $periodId): array
+    {
+        $current = DB::table('fiscal_periods')->where('id', $periodId)->first(['fiscal_year_id', 'period_no']);
+
+        if ($current === null) {
+            return [];
+        }
+
+        $periods = DB::table('fiscal_periods')
+            ->where('fiscal_year_id', $current->fiscal_year_id)
+            ->where('period_no', '<=', $current->period_no)
+            ->where('period_no', '<=', 12)
+            ->orderBy('period_no')
+            ->get(['id', 'period_no', 'start_date']);
+
+        $trend = [];
+
+        foreach ($periods as $period) {
+            $statement = $this->statements->incomeStatement((int) $period->id, yearToDate: false);
+
+            $trend[] = [
+                'period_no' => (int) $period->period_no,
+                'label' => CarbonImmutable::parse($period->start_date)->format('M'),
+                'income' => $statement['sections']['income']['total'],
+                'expenses' => $statement['sections']['expenses']['total'],
+                'net' => $statement['net_income'],
+            ];
+        }
+
+        return $trend;
+    }
+
+    /**
+     * Where the tenant is in its BIR setup — drives the dashboard's "finish
+     * setup" prompt. `go_live_at` is the moment the owner attested the
+     * registration details are real (OnboardingController::goLive), so it is
+     * the one honest signal for "ready to issue documents for real".
+     *
+     * @return array{live:bool, has_accn:bool, has_profile:bool, npc_registered:bool}
+     */
+    private function setupStatus(): array
+    {
+        $profile = DB::table('company_profile')->where('id', 1)
+            ->first(['registered_name', 'tin', 'accn', 'go_live_at', 'npc_registered']);
+
+        if ($profile === null) {
+            return ['live' => false, 'has_accn' => false, 'has_profile' => false, 'npc_registered' => false];
+        }
+
+        return [
+            'live' => $profile->go_live_at !== null,
+            'has_accn' => $profile->accn !== null && $profile->accn !== '',
+            'has_profile' => $profile->registered_name !== null && $profile->registered_name !== ''
+                && $profile->tin !== null && $profile->tin !== '' && $profile->tin !== CompanyProfile::PLACEHOLDER_TIN,
+            'npc_registered' => (bool) $profile->npc_registered,
         ];
     }
 

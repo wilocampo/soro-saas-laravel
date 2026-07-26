@@ -88,6 +88,40 @@ class DashboardSummaryTest extends LedgerTestCase
         $this->assertSame(180_000, $summary['profit_and_loss']['year_to_date']['net_income']);
     }
 
+    /**
+     * The trend chart is per-period, so it must FOOT to the year-to-date
+     * income statement — the same "one story" guarantee the rest of the
+     * dashboard keeps. If it did not, the chart could show a shape the
+     * reports deny.
+     */
+    public function test_the_trend_foots_to_the_year_to_date_statement(): void
+    {
+        $this->seedLedgerData();
+        $summary = app(DashboardSummary::class)->forToday();
+        $ytd = app(FinancialStatements::class)->incomeStatement($this->currentPeriodId(), yearToDate: true);
+
+        $this->assertNotEmpty($summary['trend']);
+        $this->assertSame(
+            $ytd['sections']['income']['total'],
+            array_sum(array_column($summary['trend'], 'income')),
+            'Trend income must foot to the YTD income statement.',
+        );
+        $this->assertSame(
+            $ytd['sections']['expenses']['total'],
+            array_sum(array_column($summary['trend'], 'expenses')),
+            'Trend expenses must foot to the YTD income statement.',
+        );
+    }
+
+    /** A fresh tenant has not gone live, and the dashboard says so. */
+    public function test_setup_status_reflects_an_unfinished_onboarding(): void
+    {
+        $summary = app(DashboardSummary::class)->forToday();
+
+        $this->assertFalse($summary['setup']['live'], 'No go_live_at on a fresh tenant.');
+        $this->assertFalse($summary['setup']['has_accn']);
+    }
+
     public function test_overdue_receivables_are_separated_from_current(): void
     {
         $this->seedLedgerData();

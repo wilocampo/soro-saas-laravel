@@ -11,15 +11,15 @@
     margin-bottom: 2rem;
     border-radius: var(--content-border-radius);
 
-    // A card used to be distinguished from the page only by the faint
-    // difference between --surface-card and --surface-ground, with no border
-    // and no shadow. On the light theme that difference is nearly invisible,
-    // so adjacent cards read as one flat surface. A soft elevation shadow
-    // gives each card a defined edge without a heavy border — a restrained
-    // lift, not a floating consumer-app card.
+    // A card used to separate from the page only by the faint difference
+    // between --surface-card and --surface-ground. On the light theme that
+    // difference is nearly invisible, so adjacent cards read as one flat
+    // surface. A hairline border guarantees a legible edge in every theme,
+    // and a soft shadow lifts the card off the ground without floating it.
+    border: 1px solid var(--surface-border);
     box-shadow:
-        0 1px 2px rgba(18, 25, 22, 0.04),
-        0 4px 12px -6px rgba(18, 25, 22, 0.08);
+        0 1px 2px rgba(18, 25, 22, 0.05),
+        0 6px 16px -8px rgba(18, 25, 22, 0.12);
 
     &:last-child {
         margin-bottom: 0;
@@ -27,13 +27,12 @@
 }
 
 // On the dark theme a drop shadow all but disappears against the near-black
-// ground, so the separation there leans on the lighter card surface plus a
-// hairline of the theme's own border token to keep the edge legible.
+// ground, so the border carries most of the separation and the shadow is
+// deepened to compensate.
 .app-dark .card {
     box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.4),
-        0 6px 16px -8px rgba(0, 0, 0, 0.6);
-    border: 1px solid var(--surface-border);
+        0 8px 20px -10px rgba(0, 0, 0, 0.7);
 }
 
 .p-toast {
